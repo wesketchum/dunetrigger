@@ -1,0 +1,10 @@
+tpmakerTPC:
+{
+    module_type: TriggerPrimitiveMakerTPC
+    rawdigit_tag: "daq"
+    tpalg: {
+        tool_type: TPAlgTPCExample
+    }
+    verbosity: 0
+
+}
