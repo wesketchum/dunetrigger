@@ -13,6 +13,7 @@
 #include "detdataformats/trigger/TriggerPrimitive.hpp"
 #include "detdataformats/DetID.hpp"
 #include "lardataobj/RawData/RawDigit.h"
+#include "lardataobj/RawData/RDTimeStamp.h"
 
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -24,6 +25,8 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+
+#include "canvas/Persistency/Common/FindOneP.h"
 
 #include <memory>
 #include <iostream>
@@ -67,7 +70,7 @@ duneana::TriggerPrimitiveMakerTPC::TriggerPrimitiveMakerTPC(fhicl::ParameterSet 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
   produces<std::vector<dunedaq::trgdataformats::TriggerPrimitive>>();
   consumes<std::vector<raw::RawDigit>>(rawdigit_tag_);
-
+  consumes<art::Assns<raw::RDTimeStamp, raw::RawDigit> >(rawdigit_tag_);
   
 }
 
@@ -80,17 +83,22 @@ void duneana::TriggerPrimitiveMakerTPC::produce(art::Event& e)
 
   //readout raw digits from event
   auto rawdigit_handle = e.getValidHandle< std::vector<raw::RawDigit> >(rawdigit_tag_);
-  
+
+  //get the associated timestamps to our rawdigit objects
+  const art::FindOneP<raw::RDTimeStamp> rdtimestamp_per_rd(rawdigit_handle,e,rawdigit_tag_);
+
   auto rawdigit_vec = *rawdigit_handle;
 
   if(verbosity_>0)
     std::cout << "Found " << rawdigit_vec.size() << " raw::RawDigits" << std::endl;
 
-  for( auto const& digit : rawdigit_vec) {
+  for(size_t i_digit=0; i_digit<rawdigit_vec.size(); ++i_digit) {
+    auto const& digit = rawdigit_vec[i_digit];
+    auto rdts = rdtimestamp_per_rd.at(i_digit);
     tpalg_->process_waveform(digit.ADCs(),
 			     digit.Channel(),
 			     (uint16_t)(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC),
-			     0,
+			     rdts->GetTimeStamp(),
 			     *tp_col_ptr);
   }
 
