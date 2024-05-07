@@ -12,11 +12,14 @@ namespace duneana {
 
   public:
 
+    typedef std::pair< dunedaq::trgdataformats::TriggerActivityData,
+                       std::vector<dunedaq::trgdataformats::TriggerPrimitive> > TriggerActivity;
+
     virtual ~TAAlgTPCTool() noexcept = default; 
 
     virtual void initialize() {};
     virtual void process_tp(dunedaq::trgdataformats::TriggerPrimitive const& tp,
-			    std::vector<dunedaq::trgdataformats::TriggerActivityData> & tas_out) = 0;
+			                std::vector<TriggerActivity> & tas_out) = 0;
   };
 }
 

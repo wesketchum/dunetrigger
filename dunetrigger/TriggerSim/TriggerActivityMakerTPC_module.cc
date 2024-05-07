@@ -16,6 +16,7 @@
 
 #include "larcore/Geometry/Geometry.h"
 
+#include "art/Persistency/Common/PtrMaker.h"
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
@@ -24,6 +25,7 @@
 #include "art/Framework/Principal/SubRun.h"
 #include "art/Utilities/make_tool.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Persistency/Common/Assns.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -72,6 +74,8 @@ duneana::TriggerActivityMakerTPC::TriggerActivityMakerTPC(fhicl::ParameterSet co
   // Call appropriate produces<>() functions here.
   // Call appropriate consumes<>() for any products to be retrieved by this module.
   produces<std::vector<dunedaq::trgdataformats::TriggerActivityData>>();
+  produces<std::vector<dunedaq::trgdataformats::TriggerPrimitive>>();
+  produces<art::Assns<dunedaq::trgdataformats::TriggerActivityData,dunedaq::trgdataformats::TriggerPrimitive>>();
   consumes<std::vector<dunedaq::trgdataformats::TriggerPrimitive>>(tp_tag_);
  
 }
@@ -88,10 +92,18 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
   //grab the geometry service
   art::ServiceHandle<geo::Geometry> geom;
   
-  //make output collection for the TriggerActivityData objects
+  //make output collections for the TriggerActivityData objects,
+  //the TriggerPrimitives contained in them, and
+  //the association between those
   auto ta_vec_ptr = std::make_unique< std::vector<dunedaq::trgdataformats::TriggerActivityData> >();
+  auto tp_vec_ptr = std::make_unique< std::vector<dunedaq::trgdataformats::TriggerPrimitive> >();
+  auto tp_in_tas_assn_ptr = std::make_unique< art::Assns<dunedaq::trgdataformats::TriggerActivityData,dunedaq::trgdataformats::TriggerPrimitive> >();
 
-  //grab tps from event
+  //make PtrMake objects for creating the assns
+  art::PtrMaker<dunedaq::trgdataformats::TriggerActivityData> taPtrMaker(e);
+  art::PtrMaker<dunedaq::trgdataformats::TriggerPrimitive> tpPtrMaker(e);
+
+    //grab tps from event
   auto tp_handle = e.getValidHandle< std::vector<dunedaq::trgdataformats::TriggerPrimitive> >(tp_tag_);  
   auto tp_vec = *tp_handle;
 
@@ -117,16 +129,36 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
 		<< "]" << std::endl;
     }
 
-    //initialize our taalg
+    //create an output vector and initialize our taalg
+    std::vector< TAAlgTPCTool::TriggerActivity> tas_out;
     taalg_->initialize();
 
     //loop through the TPs and process
     for( auto const& tp : tps.second)
-      taalg_->process_tp(tp,*ta_vec_ptr);
+      taalg_->process_tp(tp,tas_out);
+
+    //loop over the output TAs
+    for( auto const& ta : tas_out){
+
+        //create the art Ptrs needed for the associations
+        auto const taPtr = taPtrMaker(ta_vec_ptr->size());
+        std::vector< art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> > tpPtrs;
+        for(size_t i_new_tp=0; i_new_tp<ta.second.size(); ++i_new_tp) {
+            tpPtrs.emplace_back(tpPtrMaker(tp_vec_ptr->size() + i_new_tp));
+        }
+
+        //fill our final output collections
+        ta_vec_ptr->emplace_back(ta.first);
+        tp_vec_ptr->insert(tp_vec_ptr->end(),ta.second.begin(),ta.second.end());
+        tp_in_tas_assn_ptr->addMany(taPtr,tpPtrs);
+    }
 
   }
 
+  //place onto the event
   e.put(std::move(ta_vec_ptr));
+  e.put(std::move(tp_vec_ptr));
+  e.put(std::move(tp_in_tas_assn_ptr));
 
 }
 
