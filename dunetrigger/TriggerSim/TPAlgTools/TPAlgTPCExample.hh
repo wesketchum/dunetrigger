@@ -29,7 +29,7 @@ namespace duneana {
       this_tp.detid = detid;
       
       this_tp.type =      dunedaq::trgdataformats::TriggerPrimitive::Type::kTPC;
-      this_tp.algorithm = dunedaq::trgdataformats::TriggerPrimitive::Algorithm::kTPCDefault;
+      this_tp.algorithm = dunedaq::trgdataformats::TriggerPrimitive::Algorithm::kUnknown;
       
       this_tp.flag = 0;
       
