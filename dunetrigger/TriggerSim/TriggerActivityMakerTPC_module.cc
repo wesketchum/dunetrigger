@@ -26,6 +26,7 @@
 #include "art/Utilities/make_tool.h"
 #include "canvas/Utilities/InputTag.h"
 #include "canvas/Persistency/Common/Assns.h"
+#include "canvas/Persistency/Common/PtrVector.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -60,8 +61,8 @@ private:
   std::unique_ptr<TAAlgTPCTool> taalg_;
   int verbosity_;
 
-  static bool compareTriggerPrimitive(dunedaq::trgdataformats::TriggerPrimitive tp1,
-				      dunedaq::trgdataformats::TriggerPrimitive tp2);
+  static bool compareTriggerPrimitive(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp1,
+				                      art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp2);
 };
 
 
@@ -74,16 +75,15 @@ duneana::TriggerActivityMakerTPC::TriggerActivityMakerTPC(fhicl::ParameterSet co
   // Call appropriate produces<>() functions here.
   // Call appropriate consumes<>() for any products to be retrieved by this module.
   produces<std::vector<dunedaq::trgdataformats::TriggerActivityData>>();
-  produces<std::vector<dunedaq::trgdataformats::TriggerPrimitive>>();
   produces<art::Assns<dunedaq::trgdataformats::TriggerActivityData,dunedaq::trgdataformats::TriggerPrimitive>>();
   consumes<std::vector<dunedaq::trgdataformats::TriggerPrimitive>>(tp_tag_);
  
 }
 
-bool duneana::TriggerActivityMakerTPC::compareTriggerPrimitive(dunedaq::trgdataformats::TriggerPrimitive tp1,
-							       dunedaq::trgdataformats::TriggerPrimitive tp2)
+bool duneana::TriggerActivityMakerTPC::compareTriggerPrimitive(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp1,
+							                                   art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp2)
 {
-  return tp1.time_start < tp2.time_start;
+  return tp1->time_start < tp2->time_start;
 }
 
 void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
@@ -100,21 +100,21 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
   auto tp_in_tas_assn_ptr = std::make_unique< art::Assns<dunedaq::trgdataformats::TriggerActivityData,dunedaq::trgdataformats::TriggerPrimitive> >();
 
   //make PtrMake objects for creating the assns
-  art::PtrMaker<dunedaq::trgdataformats::TriggerActivityData> taPtrMaker(e);
-  art::PtrMaker<dunedaq::trgdataformats::TriggerPrimitive> tpPtrMaker(e);
+  art::PtrMaker<dunedaq::trgdataformats::TriggerActivityData> taPtrMaker{e};
 
     //grab tps from event
-  auto tp_handle = e.getValidHandle< std::vector<dunedaq::trgdataformats::TriggerPrimitive> >(tp_tag_);  
+  auto tp_handle = e.getValidHandle< std::vector<dunedaq::trgdataformats::TriggerPrimitive> >(tp_tag_);
   auto tp_vec = *tp_handle;
 
   if(verbosity_>0)
     std::cout << "Found " << tp_vec.size() << " TPs" << std::endl;
 
   //need to sort TPs by ROP (APA, CRP...)
-  std::map< readout::ROPID,std::vector<dunedaq::trgdataformats::TriggerPrimitive> > tps_per_rop_map;
-  for( auto const& tp : tp_vec) {
-    auto rop = geom->ChannelToROP(tp.channel);
-    tps_per_rop_map[rop].push_back(tp);
+  //note: use art::PtrVector here since we are going to need to store the assn between TA and TPs
+  std::map< readout::ROPID,art::PtrVector<dunedaq::trgdataformats::TriggerPrimitive> > tps_per_rop_map;
+  for( size_t i_tp=0; i_tp < tp_vec.size(); ++i_tp) {
+    auto rop = geom->ChannelToROP(tp_vec[i_tp].channel);
+    tps_per_rop_map[rop].push_back( art::Ptr<dunedaq::trgdataformats::TriggerPrimitive>(tp_handle,i_tp) );
   }
 
   //now, per map, we need to sort the tps by time
@@ -125,7 +125,7 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
     if(verbosity_>0){
       std::cout << "\t ROP: " << tps.first << std::endl;
       std::cout << "\t\t " << tps.second.size() << " TPs between [" 
-		<< tps.second.front().time_start << ", " << tps.second.back().time_start
+		<< tps.second.front()->time_start << ", " << tps.second.back()->time_start
 		<< "]" << std::endl;
     }
 
@@ -142,22 +142,16 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
 
         //create the art Ptrs needed for the associations
         auto const taPtr = taPtrMaker(ta_vec_ptr->size());
-        std::vector< art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> > tpPtrs;
-        for(size_t i_new_tp=0; i_new_tp<ta.second.size(); ++i_new_tp) {
-            tpPtrs.emplace_back(tpPtrMaker(tp_vec_ptr->size() + i_new_tp));
-        }
 
         //fill our final output collections
         ta_vec_ptr->emplace_back(ta.first);
-        tp_vec_ptr->insert(tp_vec_ptr->end(),ta.second.begin(),ta.second.end());
-        tp_in_tas_assn_ptr->addMany(taPtr,tpPtrs);
+        tp_in_tas_assn_ptr->addMany(taPtr,ta.second);
     }
 
   }
 
   //place onto the event
   e.put(std::move(ta_vec_ptr));
-  e.put(std::move(tp_vec_ptr));
   e.put(std::move(tp_in_tas_assn_ptr));
 
 }

@@ -31,22 +31,22 @@ namespace duneana {
 
     //process a single tp
     //if we have met some condition for making a TA, then add it to the output vector
-    void process_tp(dunedaq::trgdataformats::TriggerPrimitive const& tp,
+    void process_tp(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp,
 		            std::vector<TriggerActivity> & tas_out)
     {
 
       ta_current_.second.push_back(tp);
 
-      if(ta_current_.first.time_start > tp.time_start)
-	    ta_current_.first.time_start = tp.time_start;
-      if(ta_current_.first.time_end < (tp.time_start + tp.time_over_threshold))
-	    ta_current_.first.time_end = tp.time_start+tp.time_over_threshold;
-      if(ta_current_.first.channel_start > tp.channel)
-	    ta_current_.first.channel_start = tp.channel;
-      if(ta_current_.first.channel_end < tp.channel)
-	    ta_current_.first.channel_end = tp.channel;
+      if(ta_current_.first.time_start > tp->time_start)
+	    ta_current_.first.time_start = tp->time_start;
+      if(ta_current_.first.time_end < (tp->time_start + tp->time_over_threshold))
+	    ta_current_.first.time_end = tp->time_start+tp->time_over_threshold;
+      if(ta_current_.first.channel_start > tp->channel)
+	    ta_current_.first.channel_start = tp->channel;
+      if(ta_current_.first.channel_end < tp->channel)
+	    ta_current_.first.channel_end = tp->channel;
 
-      ta_current_.first.adc_integral += tp.adc_integral;
+      ta_current_.first.adc_integral += tp->adc_integral;
 
       if(ta_current_.second.size() >= multiplicity_){
 	    tas_out.push_back(ta_current_);

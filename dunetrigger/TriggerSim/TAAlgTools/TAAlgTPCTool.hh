@@ -4,6 +4,8 @@
 #include "detdataformats/trigger/TriggerPrimitive.hpp"
 #include "detdataformats/trigger/TriggerActivityData.hpp"
 
+#include "canvas/Persistency/Common/PtrVector.h"
+
 #include <vector>
 
 namespace duneana {
@@ -13,12 +15,12 @@ namespace duneana {
   public:
 
     typedef std::pair< dunedaq::trgdataformats::TriggerActivityData,
-                       std::vector<dunedaq::trgdataformats::TriggerPrimitive> > TriggerActivity;
+                       art::PtrVector<dunedaq::trgdataformats::TriggerPrimitive> > TriggerActivity;
 
     virtual ~TAAlgTPCTool() noexcept = default; 
 
     virtual void initialize() {};
-    virtual void process_tp(dunedaq::trgdataformats::TriggerPrimitive const& tp,
+    virtual void process_tp(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp,
 			                std::vector<TriggerActivity> & tas_out) = 0;
   };
 }
