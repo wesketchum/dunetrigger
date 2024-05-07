@@ -113,7 +113,7 @@ void duneana::TriggerCandidateMakerTPC::produce(art::Event& e)
 
   //loop through the TAs and process
   for( auto const& ta : ta_vec)
-    tcalg_->process_tp(ta,*tc_vec_ptr);
+    tcalg_->process_ta(ta,*tc_vec_ptr);
 
   e.put(std::move(tc_vec_ptr));
 

@@ -15,7 +15,7 @@ namespace duneana {
     virtual ~TCAlgTPCTool() noexcept = default; 
 
     virtual void initialize() {};
-    virtual void process_tp(dunedaq::trgdataformats::TriggerActivityData const& ta,
+    virtual void process_ta(dunedaq::trgdataformats::TriggerActivityData const& ta,
 			    std::vector<dunedaq::trgdataformats::TriggerCandidateData> & tcs_out) = 0;
   };
 }
