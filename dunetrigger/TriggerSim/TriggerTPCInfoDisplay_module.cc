@@ -1,3 +1,16 @@
+/**
+ * @file TriggerTPCInfoDisplay_module.cc
+ *
+ * @brief This module is an analyzer that displays information about trigger primitives, trigger activities, and trigger candidates.
+ *
+ * It reads trigger primitive, trigger activity, and trigger candidate data from the input event and fills three separate TTree objects with the data.
+ * The module also provides general event information such as run number, subrun number, and event ID.
+ *
+ * The module takes three input tags to specify the collections of trigger primitive, trigger activity, and trigger candidate data.
+ * It also supports an optional verbosity level to control the amount of output printed to the console.
+ *
+ * The filled TTree objects can be used for further analysis or visualization of the trigger data.
+ */
 ////////////////////////////////////////////////////////////////////////
 // Class:       TriggerTPCInfoDisplay
 // Plugin Type: analyzer (Unknown Unknown)
