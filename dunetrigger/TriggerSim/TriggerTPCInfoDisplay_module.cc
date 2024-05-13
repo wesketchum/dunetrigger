@@ -95,7 +95,7 @@ private:
   timestamp_t fTime_peak;
   uint32_t fADC_integral;
   uint16_t fADC_peak;
-  int fROI_ID;
+  int fROP_ID;
   detid_t fDetID;
   int fType;
   int fAlgorithm;
@@ -194,7 +194,7 @@ void duneana::TriggerTPCInfoDisplay::analyze(art::Event const& e)
     
     // Get ROP ID (ReadOut Plane ID)
     auto rop = geom->ChannelToROP(fChannelID);
-    fROI_ID = rop.ROP;
+    fROP_ID = rop.ROP;
      
     // Fill tree
     fTPTree -> Fill();
@@ -251,7 +251,7 @@ void duneana::TriggerTPCInfoDisplay::beginJob()
   fTPTree -> Branch( "SubRun", &fSubRun , "SubRun/I" );
   // Trigger primitive information
   fTPTree -> Branch( "ChannelID" , &fChannelID);
-  fTPTree -> Branch( "ROP_ID" , &fROI_ID);
+  fTPTree -> Branch( "ROP_ID" , &fROP_ID);
   fTPTree -> Branch( "Start_time" , &fStart_time);
   fTPTree -> Branch( "Time_over_threshold" , &fTime_over_threshold);
   fTPTree -> Branch( "Time_peak" , &fTime_peak);
