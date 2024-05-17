@@ -11,7 +11,7 @@ namespace duneana {
 
   public:
 
-    static const unsigned int ADC_SAMPLING_RATE_IN_DTS = 32; //32 DTS time ticks betwen adc samples
+    static const unsigned int ADC_SAMPLING_RATE_IN_DTS = 32; //32 DTS time ticks between adc samples
 
     virtual ~TPAlgTPCTool() noexcept = default; 
 
