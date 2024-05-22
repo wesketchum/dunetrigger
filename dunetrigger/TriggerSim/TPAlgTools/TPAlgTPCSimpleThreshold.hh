@@ -136,9 +136,9 @@ namespace duneana {
             {
                 //we've reached the end of the hit, so need to create a TP and write it out
 
-                this_tp.time_start = start_time + i_t - hit_tover_;
+	        this_tp.time_start = start_time + (i_t - hit_tover_)*this->ADC_SAMPLING_RATE_IN_DTS;
                 this_tp.time_over_threshold = hit_tover_*this->ADC_SAMPLING_RATE_IN_DTS;
-                this_tp.time_peak = start_time + i_t - hit_tover_ + hit_peak_time_;
+                this_tp.time_peak = start_time + (i_t - hit_tover_ + hit_peak_time_)*this->ADC_SAMPLING_RATE_IN_DTS;
                 this_tp.adc_integral = hit_charge_;
                 this_tp.adc_peak = hit_peak_adc_;
                 tps_out.push_back(this_tp);
