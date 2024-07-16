@@ -3,7 +3,6 @@ add_subdirectory(TAAlgTools)
 add_subdirectory(TCAlgTools)
 
 art_make( BASENAME_ONLY MODULE_LIBRARIES
-  duneprototypes_Protodune_hd_ChannelMap_DAPHNEChannelMapService_service
   lardataobj::RawData
   dunecore::DuneObj
   lardata::ArtDataHelper
