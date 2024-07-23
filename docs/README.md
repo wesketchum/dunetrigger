@@ -64,8 +64,9 @@ git checkout feature/wketchum_TriggerDecodingUpdates
 cd ${MRB_BUILDDIR}
 
 # Set up the environment for building and installing the software
+# In gpvm machines, use -j3 to avoid memory issues, since dune gpvms have 4 cores only. Build virtual machines are not available with the Apptainer container.
 mrbsetenv
-mrb i -j8
+mrb i -j3
 mrbslp
 ```
 
