@@ -60,6 +60,7 @@ mrb g https://github.com/wesketchum/dunecore.git
 
 cd ${MRB_SOURCE}/dunecore/
 git checkout feature/wketchum_TriggerDecodingUpdates
+mrb uv dunecore ${VERSION} #Force MRB to use that version of dunecore to avoid package conflicts
 
 cd ${MRB_BUILDDIR}
 
