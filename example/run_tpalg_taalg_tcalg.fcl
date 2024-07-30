@@ -34,8 +34,11 @@ physics:
          module_type: TriggerPrimitiveMakerTPC
          rawdigit_tag: "tpcrawdecoder:daq"
          tpalg: {
-             tool_type: TPAlgTPCExample
-             verbosity: 1
+             tool_type: TPAlgTPCSimpleThreshold
+             threshold_tpg_plane0: 50
+             threshold_tpg_plane1: 50
+             threshold_tpg_plane2: 50
+             verbosity: 0
          }
          verbosity: 1
      }
@@ -45,9 +48,10 @@ physics:
          module_type: TriggerActivityMakerTPC
          tp_tag: "tpmakerTPC"
          taalg: {
-             tool_type: TAAlgTPCExample
-             multiplicity: 100
-             verbosity: 1
+	     tool_type: TAAlgTPCADCSimpleWindow 
+	     adc_threshold: 100000
+	     window_length: 10000
+	     verbosity: 0
          }
          verbosity: 1
      }
