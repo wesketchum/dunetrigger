@@ -83,13 +83,31 @@ namespace duneana {
       // a fresh window with the current TP.
       else if (current_window_.adc_integral > adc_threshold_) {
 	ta_current_.first = construct_ta();
-        tas_out.push_back(ta_current_);
+
+	tas_out.push_back(ta_current_);
 	ta_current_.second.clear();
+	ta_current_.second.push_back(tp);
+
 	current_window_.reset(input_tp);
       }
       // If false, move the window along
       else{
 	current_window_.move(input_tp, window_length_);
+
+	art::PtrVector<dunedaq::trgdataformats::TriggerPrimitive> tmp_tp_vec = ta_current_.second;
+	ta_current_.second.clear();
+	for (const auto& tp_window : current_window_.inputs) {
+	  for (const auto& tp_tmp : tmp_tp_vec) {
+	    if (tp_window.time_start == (*tp_tmp).time_start && 
+		tp_window.adc_integral == (*tp_tmp).adc_integral && 
+		tp_window.time_over_threshold == (*tp_tmp).time_over_threshold) {
+	      ta_current_.second.push_back(tp_tmp);
+	      break;
+	    }
+	  }
+	}
+	if (current_window_.inputs.size() != ta_current_.second.size())
+	  std::cout<<"current_window_.inputs.size() "<<current_window_.inputs.size()<<" ta_current_.second.size() "<<ta_current_.second.size()<<"\n";
       }
 
       return;      
