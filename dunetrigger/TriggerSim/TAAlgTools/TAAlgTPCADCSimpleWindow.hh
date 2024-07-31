@@ -106,7 +106,7 @@ namespace duneana {
 	    }
 	  }
 	}
-	if (current_window_.inputs.size() != ta_current_.second.size())
+	if (verbosity_ > 1 && current_window_.inputs.size() != ta_current_.second.size())
 	  std::cout<<"current_window_.inputs.size() "<<current_window_.inputs.size()<<" ta_current_.second.size() "<<ta_current_.second.size()<<"\n";
       }
 
