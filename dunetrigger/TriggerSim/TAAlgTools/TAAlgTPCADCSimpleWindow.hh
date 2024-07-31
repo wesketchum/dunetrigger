@@ -5,9 +5,8 @@
 #include "detdataformats/trigger/TriggerPrimitive.hpp"
 #include "fhiclcpp/ParameterSet.h" 
 
-#include "detdataformats/DetID.hpp"
 #include "dunetrigger/TriggerSim/TAAlgTools/TAAlgTPCTool.hh"
-#include "triggeralgs/ADCSimpleWindow/TriggerActivityMakerADCSimpleWindow.hpp"
+#include "dunetriggeralgs/TriggerActivityFactory.hpp"
 
 namespace duneana {
 
@@ -22,22 +21,21 @@ namespace duneana {
     }
   
   private:
-    typedef triggeralgs::TriggerActivityMaker TAMaker;
-    typedef triggeralgs::TriggerActivityMakerADCSimpleWindow TAMakerADCSimpleWindow; 
-
-     TAMaker* alg;
+     std::unique_ptr<triggeralgs::TriggerActivityMaker> alg;
     
     void initialize() override
     {
       //triggeralgs::TriggerActivityMakerADCSimpleWindow alg = new triggeralgs; 
       ta_current_ = TriggerActivity();
-      alg = new TAMakerADCSimpleWindow();
+      //alg = new TAMakerADCSimpleWindow();
+      triggeralgs::TriggerActivityFactory* tf = new triggeralgs::TriggerActivityFactory();
+      alg = tf->build_maker("ADCSimpleWindow");
     }
 
     //process a single tp
     //if we have met some condition for making a TA, then add it to the output vector
     void process_tp(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp,
-		            std::vector<TriggerActivity> & tas_out)
+		            std::vector<TriggerActivity> & tas_out) override
     {
       //TAMakerADCSimpleWindow::operator(alg)()
       std::vector<triggeralgs::TriggerActivity> tas;

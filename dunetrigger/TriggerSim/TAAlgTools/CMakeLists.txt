@@ -8,7 +8,7 @@ cet_build_plugin(TAAlgTPCExample art::tool
 
 cet_build_plugin(TAAlgTPCADCSimpleWindow art::tool
   LIBRARIES
-  triggeralgs
+  dunetriggeralgs
   dunecore::DuneObj
   fhiclcpp 
   cetlib::cetlib 
