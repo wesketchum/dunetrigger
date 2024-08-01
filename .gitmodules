@@ -1,0 +1,6 @@
+[submodule "triggeralgs"]
+	path = triggeralgs
+	url = https://github.com/dune-daq/triggeralgs
+[submodule "dunetrigger/triggeralgs"]
+	path = dunetrigger/triggeralgs
+	url = https://github.com/dune-daq/triggeralgs
