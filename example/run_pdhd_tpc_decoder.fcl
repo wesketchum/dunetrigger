@@ -1,0 +1,50 @@
+#include "HDF5RawInput2.fcl"
+#include "PDHDTPCReader.fcl"
+#include "PDHDTriggerReader.fcl"
+#include "PDHDDataInterfaceWIBEth.fcl"
+
+services:
+{
+  TimeTracker:  {}
+  TFileService: 
+  {
+    fileName: "pdhdtpcdecodermoduleTFile.root"
+  } 
+  HDF5RawFile2Service:  {}
+  PD2HDChannelMapService: 
+   {
+     FileName: "PD2HDChannelMap_v4.txt"
+   }
+}
+
+physics:
+{
+  producers:
+  {
+    tpcrawdecoder: @local::PDHDTPCReaderDefaults
+    trigrawdecoder: @local::PDHDTriggerReaderDefaults
+  }
+
+  produce: [ trigrawdecoder, tpcrawdecoder ] 
+  output: [ out1 ]
+  trigger_paths : [ produce ]
+  end_paths: [ output ]
+} 	     
+
+outputs:
+{
+  out1:
+  {
+    compressionLevel: 1
+    module_type: RootOutput
+    fileName: "%ifb_decode.root"
+  }
+}
+
+source: @local::hdf5rawinput2
+
+process_name: runpdhdtpcdecodermodule
+
+physics.producers.tpcrawdecoder.DecoderToolParams: @local::PDHDDataInterfaceWIBEthDefaults
+services.PD2HDChannelMapService.FileName: "PD2HDChannelMap_WIBEth_electronics_v1.txt"
+
