@@ -17,7 +17,7 @@ namespace dunedaq {
                 };
 
                 virtual ~TPCChannelMap() noexcept = default;
-                virtual uint get_plane_from_offline_channel(uint offchannel) = 0;
+                virtual uint get_plane_from_offline_channel(uint offchannel);
 
         };
 
