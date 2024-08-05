@@ -20,27 +20,29 @@ namespace duneana {
             : algname(ps.get<std::string>("algname")),
             algconfig(nlohmann::json::parse(ps.get<std::string>("algconfig")))
             {
+                alg->configure(algconfig);
                 initialize();
+
             }
 
         private:
             //std::unique_ptr<triggeralgs::TriggerActivityMaker> alg;
-            std::unique_ptr<triggeralgs::TriggerActivityMaker> alg;
 
             std::string algname;
             nlohmann::json algconfig;
             std::vector<triggeralgs::TriggerActivity> tas_temp;
 
+
+            std::shared_ptr<triggeralgs::AbstractFactory<triggeralgs::TriggerActivityMaker>> tf = triggeralgs::TriggerActivityFactory::get_instance();
+
+            std::unique_ptr<triggeralgs::TriggerActivityMaker> alg = tf->build_maker(algname);
+
             void initialize() override;
             void process_tp(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp, std::vector<TriggerActivity>& tas_out) override;
     };
 
-    void TAAlgTPCOnline::initialize() {
+    void TAAlgTPCOnline::initialize(){
         tas_temp = {};
-        auto tf = triggeralgs::TriggerActivityFactory::get_instance();
-        alg = tf->build_maker(algname);
-        //alg = triggeralgs::make_ta_maker(algname);
-        alg->configure(algconfig);
     }
 
     void TAAlgTPCOnline::process_tp(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp, std::vector<TriggerActivity>& tas_out) {
