@@ -11,8 +11,7 @@ using namespace dunedaq::detchannelmaps;
 
 uint TPCChannelMap::get_plane_from_offline_channel(uint offchannel){
     art::ServiceHandle<geo::Geometry> geom;
-    readout::ROPID rop = geom->ChannelToROP(static_cast<raw::ChannelID_t>(offchannel));
-    return rop.deepestIndex();
+    return geom->ChannelToROP(static_cast<raw::ChannelID_t>(offchannel)).deepestIndex();
 }
 
 std::shared_ptr<TPCChannelMap> dunedaq::detchannelmaps::make_map(std::string const& plugin_name){
