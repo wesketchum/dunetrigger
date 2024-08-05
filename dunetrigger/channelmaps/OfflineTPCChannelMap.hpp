@@ -21,11 +21,6 @@ namespace dunedaq {
 
         };
 
-        class VDColdboxChannelMap : public TPCChannelMap {
-            public:
-                uint get_plane_from_offline_channel(uint offchannel) override;
-        };
-
        std::shared_ptr<TPCChannelMap> make_map(std::string const& plugin_name);
 
     }
