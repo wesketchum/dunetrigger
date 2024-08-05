@@ -6,7 +6,7 @@
 #include "fhiclcpp/ParameterSet.h" 
 
 #include "dunetrigger/TriggerSim/TAAlgTools/TAAlgTPCTool.hh"
-#include "dunetriggeralgs/TriggerActivityFactory.hpp"
+#include "dunetrigger/triggeralgs/include/triggeralgs/TriggerActivityFactory.hpp"
 
 namespace duneana {
 

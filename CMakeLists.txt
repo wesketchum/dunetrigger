@@ -48,12 +48,13 @@ find_ups_product( art )
 find_ups_product( nlohmann_json )
 find_ups_root()
 find_ups_product( cetbuildtools ) # LIBRARY_OUTPUT_DIRECTORY, etc.
+find_ups_product ( TRACE )
 
 #dune packages
 find_ups_product( dunecore )
 find_ups_product( dunedetdataformats )
 find_ups_product( dunedaqdataformats )
-find_ups_product( dunetriggeralgs )
+#find_ups_product( dunetriggeralgs )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
