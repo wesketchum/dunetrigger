@@ -4,8 +4,8 @@
 #include <memory>
 #include <string>
 
-namespace dunedaq {
-    namespace detchannelmaps {
+namespace dunedaq::detchannelmaps {
+
         class TPCChannelMap {
             public:
                 struct TPCCoords
@@ -16,14 +16,18 @@ namespace dunedaq {
                     uint16_t channel;
                 };
 
+                // use default destructor
                 virtual ~TPCChannelMap() noexcept = default;
+
+                // this is the only function PlaneCoincidence uses
                 virtual uint get_plane_from_offline_channel(uint offchannel);
 
         };
 
+        // Makes a channel map given a mapname. Note that in this case the name is ignored in
+        // favour of the map LArsoft loads, and the argument is kept for
+        // interface compatibility reasons.
        std::shared_ptr<TPCChannelMap> make_map(std::string const& plugin_name);
-
-    }
 }
 
 

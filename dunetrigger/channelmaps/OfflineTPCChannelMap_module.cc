@@ -16,6 +16,5 @@ uint TPCChannelMap::get_plane_from_offline_channel(uint offchannel){
 }
 
 std::shared_ptr<TPCChannelMap> dunedaq::detchannelmaps::make_map(std::string const& plugin_name){
-    // doing this the lazy way since this is a really barebones implementation
     return std::shared_ptr<TPCChannelMap>();
 };
