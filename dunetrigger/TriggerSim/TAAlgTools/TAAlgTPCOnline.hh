@@ -36,7 +36,6 @@ namespace duneana {
     };
 
     void TAAlgTPCOnline::initialize() {
-        std::cout << "Initializing Alg" << std::endl;
         tas_temp = {};
         auto tf = triggeralgs::TriggerActivityFactory::get_instance();
         alg = tf->build_maker(algname);
