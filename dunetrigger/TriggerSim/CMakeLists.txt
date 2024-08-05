@@ -22,7 +22,6 @@ art_make( BASENAME_ONLY MODULE_LIBRARIES
   cetlib::cetlib cetlib_except
   ROOT_BASIC_LIB_LIST
   triggeralgs_module
-  #LIB_LIBRARIES triggeralgs
 )
 
 
