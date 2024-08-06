@@ -2,6 +2,7 @@
 #define DUNETRIGGER_CHANNELMAPS_OFFLINETPCCHANNELMAP_HPP
 
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace dunedaq::detchannelmaps {
@@ -21,6 +22,21 @@ namespace dunedaq::detchannelmaps {
 
                 // this is the only function PlaneCoincidence uses
                 virtual uint get_plane_from_offline_channel(uint offchannel);
+
+                // going to define the rest of the interface (we can handle the
+                // implementation later since it isn't strictly necessary for
+                // now)
+
+                // this is pure virtual in DUNE-DAQ but here I think we're only
+                // going to need to default implementation wrapping geo::Geom
+                virtual uint get_offline_channel_from_crate_slot_fiber_chan(uint crate, uint slot, uint fiber, uint channel);
+
+                virtual uint get_offline_channel_from_crate_slot_stream_chan(uint crate, uint slot, uint stream, uint channel);
+
+                // this is the exact default implementation used in detchannelmaps
+                virtual std::string get_tpc_element_from_offline_channel(uint ) { return ""; }
+
+                virtual std::optional<TPCCoords> get_crate_slot_fiber_chan_from_offline_channel(uint offchannel) = 0;
 
         };
 
