@@ -47,14 +47,13 @@ namespace duneana {
 
     void TAAlgTPCOnline::process_tp(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp, std::vector<TriggerActivity>& tas_out) {
         using std::vector;
-        using dunedaq::trgdataformats::TriggerActivityData;
 
         alg->operator()(*tp, tas_temp);
         // TODO figure out the best way to do this
         // there is some weird mismatch between the data types
         // and we need to figure out how to handle this with minimal overhead 
         for(triggeralgs::TriggerActivity t : tas_temp){
-            TriggerActivityData td = static_cast<TriggerActivityData>(t);
+            dunedaq::trgdataformats::TriggerActivityData td = static_cast<dunedaq::trgdataformats::TriggerActivityData>(t);
             TriggerActivity c;
             c.first = td;
             c.second.push_back(tp);

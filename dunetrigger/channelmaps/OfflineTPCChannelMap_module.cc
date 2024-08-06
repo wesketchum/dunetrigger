@@ -10,6 +10,8 @@
 using namespace dunedaq::detchannelmaps;
 
 uint TPCChannelMap::get_plane_from_offline_channel(uint offchannel){
+    // This can't be a class member since we want to avoid linking the LArsoft
+    // geometry service to triggeralgs
     art::ServiceHandle<geo::Geometry> geom;
     return geom->ChannelToROP(static_cast<raw::ChannelID_t>(offchannel)).deepestIndex();
 }

@@ -46,8 +46,6 @@ namespace duneana {
 
     void TCAlgTPCOnline::process_ta(dunedaq::trgdataformats::TriggerActivityData const& ta, std::vector<dunedaq::trgdataformats::TriggerCandidateData>& tcs_out) {
         using std::vector;
-        using triggeralgs::TriggerCandidate;
-        using dunedaq::trgdataformats::TriggerCandidateData;
 
         // triggeralgs wants the derived type TriggerActivity, whereas we have
         // the base type TriggerActivityData, so we cast this
@@ -60,7 +58,7 @@ namespace duneana {
         // todo verify that we should do this here and not on intialization
         // (likely by comparing runs)
         for(triggeralgs::TriggerCandidate t : tcs_temp){
-            tcs_out.push_back(static_cast<TriggerCandidateData>(t));
+            tcs_out.push_back(static_cast<dunedaq::trgdataformats::TriggerCandidateData>(t));
         }
     };
 }
