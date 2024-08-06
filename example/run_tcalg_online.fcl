@@ -2,7 +2,7 @@
 #include "protodune_tools_dune.fcl"
 #include "tools_dune.fcl"
 
-process_name: RunTA
+process_name: RunTC
 
 services:
 {
@@ -29,29 +29,13 @@ physics:
 
  producers:
  {
-     tpmakerTPC:
+     tcmakerTPC:
      {
-         module_type: TriggerPrimitiveMakerTPC
-         rawdigit_tag: "tpcrawdecoder:daq"
-         tpalg: {
-	     threshold_tpg_plane0: 100
-	     threshold_tpg_plane1: 100
-	     threshold_tpg_plane2: 200
-             tool_type: TPAlgTPCSimpleThreshold
-             verbosity: 1
-         }
-         verbosity: 1
-     }
-
-     tamakerTPC:
-     {
-         module_type: TriggerActivityMakerTPC
-         tp_tag: "tpmakerTPC"
-         taalg: {
-	     tool_type: TAAlgTPCOnline
-	     #algname: "ADCSimpleWindow"
-	     #algname: "TriggerActivityMakerADCSimpleWindowPlugin"
-	     algname: "TriggerActivityMakerPlaneCoincidencePlugin"
+         module_type: TriggerCandidateMakerTPC
+         ta_tag: "tamakerTPC"
+         tcalg: {
+	     tool_type: TCAlgTPCOnline
+	     algname: "TriggerCandidateMakerADCSimpleWindowPlugin" 
 	     algconfig: '{}' 
          }
          verbosity: 1
@@ -61,7 +45,7 @@ physics:
 
 
  stream1:  [ out1 ]
- reco: [ tpmakerTPC, tamakerTPC ]
+ reco: [ tcmakerTPC ]
  trigger_paths: [ reco ]
 
  end_paths:     [stream1]
