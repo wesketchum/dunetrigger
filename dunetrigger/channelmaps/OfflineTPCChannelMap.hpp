@@ -7,44 +7,48 @@
 
 namespace dunedaq::detchannelmaps {
 
-        class TPCChannelMap {
-            public:
-                struct TPCCoords
-                {
-                    uint16_t crate;
-                    uint16_t slot;
-                    uint16_t fiber;
-                    uint16_t channel;
-                };
+class TPCChannelMap {
+public:
+  struct TPCCoords {
+    uint16_t crate;
+    uint16_t slot;
+    uint16_t fiber;
+    uint16_t channel;
+  };
 
-                // use default destructor
-                virtual ~TPCChannelMap() noexcept = default;
+  // use default destructor
+  virtual ~TPCChannelMap() noexcept = default;
 
-                // this is the only function PlaneCoincidence uses
-                virtual uint get_plane_from_offline_channel(uint offchannel);
+  // this is the only function PlaneCoincidence uses
+  virtual uint get_plane_from_offline_channel(uint offchannel);
 
-                // going to define the rest of the interface (we can handle the
-                // implementation later since it isn't strictly necessary for
-                // now)
+  // going to define the rest of the interface (we can handle the
+  // implementation later since it isn't strictly necessary for
+  // now)
 
-                // this is pure virtual in DUNE-DAQ but here I think we're only
-                // going to need to default implementation wrapping geo::Geom
-                virtual uint get_offline_channel_from_crate_slot_fiber_chan(uint crate, uint slot, uint fiber, uint channel);
+  // this is pure virtual in DUNE-DAQ but here I think we're only
+  // going to need to default implementation wrapping geo::Geom
+  virtual uint get_offline_channel_from_crate_slot_fiber_chan(uint crate,
+                                                              uint slot,
+                                                              uint fiber,
+                                                              uint channel);
 
-                virtual uint get_offline_channel_from_crate_slot_stream_chan(uint crate, uint slot, uint stream, uint channel);
+  virtual uint get_offline_channel_from_crate_slot_stream_chan(uint crate,
+                                                               uint slot,
+                                                               uint stream,
+                                                               uint channel);
 
-                // this is the exact default implementation used in detchannelmaps
-                virtual std::string get_tpc_element_from_offline_channel(uint ) { return ""; }
+  // this is the exact default implementation used in detchannelmaps
+  virtual std::string get_tpc_element_from_offline_channel(uint) { return ""; }
 
-                virtual std::optional<TPCCoords> get_crate_slot_fiber_chan_from_offline_channel(uint offchannel) = 0;
+  virtual std::optional<TPCCoords>
+  get_crate_slot_fiber_chan_from_offline_channel(uint offchannel) = 0;
+};
 
-        };
-
-        // Makes a channel map given a mapname. Note that in this case the name is ignored in
-        // favour of the map LArsoft loads, and the argument is kept for
-        // interface compatibility reasons.
-       std::shared_ptr<TPCChannelMap> make_map(std::string const& plugin_name);
-}
-
+// Makes a channel map given a mapname. Note that in this case the name is
+// ignored in favour of the map LArsoft loads, and the argument is kept for
+// interface compatibility reasons.
+std::shared_ptr<TPCChannelMap> make_map(std::string const &plugin_name);
+} // namespace dunedaq::detchannelmaps
 
 #endif
