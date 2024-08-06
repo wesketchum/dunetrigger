@@ -31,18 +31,17 @@ public:
   virtual uint get_offline_channel_from_crate_slot_fiber_chan(uint crate,
                                                               uint slot,
                                                               uint fiber,
-                                                              uint channel);
+                                                              uint channel) = 0;
 
   virtual uint get_offline_channel_from_crate_slot_stream_chan(uint crate,
                                                                uint slot,
                                                                uint stream,
-                                                               uint channel);
+                                                               uint channel) = 0;
 
   // this is the exact default implementation used in detchannelmaps
   virtual std::string get_tpc_element_from_offline_channel(uint) { return ""; }
 
-  virtual std::optional<TPCCoords>
-  get_crate_slot_fiber_chan_from_offline_channel(uint offchannel) = 0;
+  virtual std::optional<TPCCoords> get_crate_slot_fiber_chan_from_offline_channel(uint offchannel) = 0;
 };
 
 // Makes a channel map given a mapname. Note that in this case the name is
