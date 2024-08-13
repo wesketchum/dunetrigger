@@ -115,8 +115,7 @@ void duneana::TriggerActivityMakerOnlineTPC::beginJob(){
     // TODO handle possible different types
     // from what I've seen it's only uint64's and bools
     // but we can just use 0 and 1 for those
-    uint64_t current_val = algconfig.get<uint64_t>(p);
-    algconfig_json[p] = current_val;
+    algconfig_json[p] = algconfig.get<uint64_t>(p);
   }
 
   // build the TAMaker algorithm using the factory
