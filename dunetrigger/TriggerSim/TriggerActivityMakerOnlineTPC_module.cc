@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <cassert>
 
 namespace duneana {
   class TriggerActivityMakerOnlineTPC;
@@ -120,6 +121,11 @@ void duneana::TriggerActivityMakerOnlineTPC::beginJob(){
 
   // build the TAMaker algorithm using the factory
   alg = tf->build_maker(algname);
+
+  // TODO find out about LArSoft's actual error handling system
+  // check if the algorithm is not a nullptr
+  assert(alg != nullptr);
+
   // call the configure method on the trigger algorithm using the json object
   // previously parsed from the sub-parameterset in the job config
   alg->configure(algconfig_json);
