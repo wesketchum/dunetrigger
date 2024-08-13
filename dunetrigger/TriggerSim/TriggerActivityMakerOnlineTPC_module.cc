@@ -99,10 +99,6 @@ duneana::TriggerActivityMakerOnlineTPC::TriggerActivityMakerOnlineTPC(fhicl::Par
   using dunedaq::trgdataformats::TriggerPrimitive;
   using dunedaq::trgdataformats::TriggerActivityData;
 
-  // read the fhicl algorithm config into the json format that the trigger
-  // algorithms want 
-
-
   produces<std::vector<TriggerActivityData>>();
   produces<art::Assns<TriggerActivityData, TriggerPrimitive>>();
   consumes<std::vector<TriggerPrimitive>>(tp_tag);
@@ -111,11 +107,11 @@ duneana::TriggerActivityMakerOnlineTPC::TriggerActivityMakerOnlineTPC(fhicl::Par
 void duneana::TriggerActivityMakerOnlineTPC::beginJob(){
 
   nlohmann::json algconfig_json;
-  for(auto p : algconfig.get_all_keys()){
+  for(auto k : algconfig.get_all_keys()){
     // TODO handle possible different types
     // from what I've seen it's only uint64's and bools
     // but we can just use 0 and 1 for those
-    algconfig_json[p] = algconfig.get<uint64_t>(p);
+    algconfig_json[k] = algconfig.get<uint64_t>(k);
   }
 
   // build the TAMaker algorithm using the factory
@@ -180,10 +176,13 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event& e)
       // now we find the TPs which are in the output TA and create the
       // associations
       auto const& taPtr = taPtrMaker(ta_vec_ptr->size());
-      ta_vec_ptr->emplace_back(out_ta);
 
+      // add output ta to the ta dataproduct vector and create a PtrVector for
+      // the TPs in the TA
+      ta_vec_ptr->emplace_back(out_ta);
       art::PtrVector<TriggerPrimitive> tp_in_ta_ptrs;
 
+      // now loop through each TP in the TA to handle associations
       for(auto& in_tp : out_ta.inputs){
         // get an iterator to matching TPs with find_if
         std::vector<TriggerPrimitiveIdx>::iterator tp_it 
