@@ -17,6 +17,8 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "larcore/Geometry/Geometry.h"
+#include "larcoreobj/SimpleTypesAndConstants/readout_types.h"
 
 #include "detdataformats/trigger/TriggerPrimitive.hpp"
 #include "detdataformats/trigger/TriggerActivityData.hpp"
@@ -24,13 +26,11 @@
 #include "dunetrigger/triggeralgs/include/triggeralgs/TriggerActivityFactory.hpp"
 #include "dunetrigger/triggeralgs/include/triggeralgs/TriggerActivity.hpp"
 
-
-#include <larcore/Geometry/Geometry.h>
-#include <larcoreobj/SimpleTypesAndConstants/readout_types.h>
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <cassert>
 
 namespace duneana {
@@ -60,6 +60,7 @@ private:
   fhicl::ParameterSet algconfig;
   art::InputTag tp_tag;
 
+  int verbosity;
 
   // defining this here so it isn't ugly to write every time
   // need it to store the index of the triggerprimitive to later make an art::Assn
@@ -91,7 +92,8 @@ duneana::TriggerActivityMakerOnlineTPC::TriggerActivityMakerOnlineTPC(fhicl::Par
   : EDProducer{p},
   algname(p.get<std::string>("algorithm")),
   algconfig(p.get<fhicl::ParameterSet>("algconfig")),
-  tp_tag(p.get<art::InputTag>("tp_tag"))
+  tp_tag(p.get<art::InputTag>("tp_tag")),
+  verbosity(p.get<int>("verbosity", 1))
     // ,
   // More initializers here.
 {
@@ -175,7 +177,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event& e)
     for(auto const& out_ta : created_tas){
       // now we find the TPs which are in the output TA and create the
       // associations
-      auto const& taPtr = taPtrMaker(ta_vec_ptr->size());
+      auto const taPtr = taPtrMaker(ta_vec_ptr->size());
 
       // add output ta to the ta dataproduct vector and create a PtrVector for
       // the TPs in the TA
@@ -204,6 +206,10 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event& e)
     }
   }
   // Move the TAs and Associations onto the event
+  if(verbosity >= 1){
+    std::cout << "Created " << created_tas.size() << " TAs" << std::endl;
+    std::cout << "TA PtrVec Size " << ta_vec_ptr->size() << std::endl;
+  }
   e.put(std::move(ta_vec_ptr));
   e.put(std::move(tp_in_tas_assn_ptr));
 }
