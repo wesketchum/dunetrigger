@@ -124,6 +124,10 @@ void duneana::TriggerActivityMakerOnlineTPC::beginJob() {
     algconfig_json[k] = algconfig.get<uint64_t>(k);
   }
 
+  if(verbosity > 0){
+    std::cout << "Using Algorithm Configuration:" << std::endl << algconfig_json << std::endl;
+  }
+
   // build the TAMaker algorithm using the factory
   alg = tf->build_maker(algname);
 
@@ -168,14 +172,20 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
   }
 
   // now we process each ROP
-  std::vector<triggeralgs::TriggerActivity> created_tas;
   for (auto &tps : tp_by_rop) {
     // first we need to sort by time
     std::sort(tps.second.begin(), tps.second.end(), compareTriggerPrimitive);
 
+    // create a vector for the created TAs in the online format
+    std::vector<triggeralgs::TriggerActivity> created_tas = {};
     // and now loop through the TPs and create TAs
     for (auto &tp : tps.second) {
       alg->operator()(tp.second, created_tas);
+    }
+
+
+    if (verbosity >= 1 && created_tas.size() > 0) {
+        std::cout << "Created " << created_tas.size() << " TAs on ROP " << tps.first << std::endl;
     }
 
     // now the fun part
@@ -190,7 +200,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
 
       // add output ta to the ta dataproduct vector and create a PtrVector for
       // the TPs in the TA
-      ta_vec_ptr->emplace_back(out_ta);
+      ta_vec_ptr->emplace_back(TriggerActivityData(out_ta));
       art::PtrVector<TriggerPrimitive> tp_in_ta_ptrs;
 
       // now loop through each TP in the TA to handle associations
@@ -218,10 +228,6 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
     }
   }
   // Move the TAs and Associations onto the event
-  if (verbosity >= 1) {
-    std::cout << "Created " << created_tas.size() << " TAs" << std::endl;
-    std::cout << "TA PtrVec Size " << ta_vec_ptr->size() << std::endl;
-  }
   e.put(std::move(ta_vec_ptr));
   e.put(std::move(tp_in_tas_assn_ptr));
 }
