@@ -124,10 +124,6 @@ void duneana::TriggerActivityMakerOnlineTPC::beginJob() {
     algconfig_json[k] = algconfig.get<uint64_t>(k);
   }
 
-  if(verbosity > 0){
-    std::cout << "Using Algorithm Configuration:" << std::endl << algconfig_json << std::endl;
-  }
-
   // build the TAMaker algorithm using the factory
   alg = tf->build_maker(algname);
 
