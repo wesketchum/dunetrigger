@@ -2,7 +2,7 @@
 #include "protodune_tools_dune.fcl"
 #include "tools_dune.fcl"
 
-process_name: RunTA
+process_name: TriggerSimOnline 
 
 services:
 {
@@ -20,7 +20,7 @@ services:
 source:
 {
   module_type: RootInput
-  maxEvents:  10        # Number of events to create
+  maxEvents:  10 # Number of events to create
   saveMemoryObjectThreshold: 0
 }
 
@@ -31,35 +31,43 @@ physics:
  {
      tpmakerTPC:
      {
-         module_type: TriggerPrimitiveMakerTPC
-         rawdigit_tag: "tpcrawdecoder:daq"
-         tpalg: {
-	     threshold_tpg_plane0: 100
-	     threshold_tpg_plane1: 100
-	     threshold_tpg_plane2: 200
-             tool_type: TPAlgTPCSimpleThreshold
-             verbosity: 1
-         }
-         verbosity: 1
+	module_type: TriggerPrimitiveMakerTPC
+	rawdigit_tag: "tpcrawdecoder:daq"
+	tpalg: {
+		tool_type: TPAlgTPCSimpleThreshold
+		verbosity: 1
+		threshold_tpg_plane0: 75
+		threshold_tpg_plane1: 75
+		threshold_tpg_plane2: 75
+	}
      }
 
      tamakerTPC:
      {
          module_type: TriggerActivityMakerOnlineTPC
          tp_tag: "tpmakerTPC"
-	 algorithm: "TriggerActivityMakerPlaneCoincidencePlugin"
+	 algorithm: "TriggerActivityMakerADCSimpleWindowPlugin"
 	 algconfig: {
-	 	window_length: 8000	
-		adc_threshold: 2000
+	 	window_length: 8000
+		adc_threshold: 2000 
          }
          verbosity: 1
+     }
+
+     tcmakerTPC:
+     {
+	module_type: TriggerCandidateMakerOnlineTPC
+	ta_tag: "tamakerTPC"
+	algorithm: "TriggerCandidateMakerADCSimpleWindowPlugin"
+	algconfig: {}	
+	verbosity: 1
      }
  }
 
 
 
  stream1:  [ out1 ]
- reco: [ tpmakerTPC, tamakerTPC ]
+ reco: [ tpmakerTPC, tamakerTPC, tcmakerTPC ]
  trigger_paths: [ reco ]
 
  end_paths:     [stream1]
