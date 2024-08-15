@@ -141,6 +141,18 @@ void duneana::TriggerActivityMakerOnlineTPC::beginJob() {
   // call the configure method on the trigger algorithm using the json object
   // previously parsed from the sub-parameterset in the job config
   alg->configure(algconfig_json);
+
+  // nice printout of channel mask
+  if (verbosity >= TriggerSim::Verbosity::kInfo) {
+    std::cout << "Masked Channels:";
+    for(raw::ChannelID_t c : channel_mask){
+      std::cout << " " << c;
+      if(!channel_mask.empty() && c != channel_mask.back()){
+        std::cout << ",";
+      }
+    }
+    std::cout << std::endl;
+  }
 }
 
 void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
@@ -174,6 +186,8 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
         std::pair<size_t, TriggerPrimitive>(i, tp_vec.at(i)));
   }
 
+
+
   // now we process each ROP
   for (auto &tps : tp_by_rop) {
     // first we need to sort by time
@@ -185,10 +199,10 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
     for (auto &tp : tps.second) {
       // check that the tp is not in the channel mask
       if(std::find(channel_mask.begin(), channel_mask.end(), tp.second.channel) == channel_mask.end()){
-        if(verbosity >= TriggerSim::Verbosity::kDebug){
-          std::cout << "Ignoring Masked TP on channel: " << tp.second.channel << std::endl;
-        }
         alg->operator()(tp.second, created_tas);
+      }
+      else if(verbosity >= TriggerSim::Verbosity::kDebug){
+          std::cout << "Ignoring Masked TP on channel: " << tp.second.channel << std::endl;
       }
     }
 
