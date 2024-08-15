@@ -20,8 +20,11 @@
 #include "larcoreobj/SimpleTypesAndConstants/readout_types.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+
 #include "detdataformats/trigger/TriggerActivityData.hpp"
 #include "detdataformats/trigger/TriggerPrimitive.hpp"
+
+#include "dunetrigger/TriggerSim/TriggerSimCommon.hh"
 
 #include "dunetrigger/triggeralgs/include/triggeralgs/TriggerActivity.hpp"
 #include "dunetrigger/triggeralgs/include/triggeralgs/TriggerActivityFactory.hpp"
@@ -182,7 +185,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
     for (auto &tp : tps.second) {
       // check that the tp is not in the channel mask
       if(std::find(channel_mask.begin(), channel_mask.end(), tp.second.channel) == channel_mask.end()){
-        if(verbosity >= 2){
+        if(verbosity >= TriggerSim::Verbosity::kDebug){
           std::cout << "Ignoring Masked TP on channel: " << tp.second.channel << std::endl;
         }
         alg->operator()(tp.second, created_tas);
@@ -190,7 +193,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
     }
 
 
-    if (verbosity >= 1 && created_tas.size() > 0) {
+    if (verbosity >= TriggerSim::Verbosity::kInfo && created_tas.size() > 0) {
         std::cout << "Created " << created_tas.size() << " TAs on ROP " << tps.first << std::endl;
     }
 
