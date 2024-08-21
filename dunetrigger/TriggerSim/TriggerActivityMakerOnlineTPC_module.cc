@@ -33,7 +33,6 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
-#include <cassert>
 #include <memory>
 #include <string>
 
@@ -78,9 +77,8 @@ private:
   // new algorithm at any point
   // since we were discussing different algorithms for different planes, I think
   // this makes that relatively easy
-  std::shared_ptr<
-      triggeralgs::AbstractFactory<triggeralgs::TriggerActivityMaker>>
-      tf = triggeralgs::TriggerActivityFactory::get_instance();
+  std::shared_ptr<triggeralgs::AbstractFactory<triggeralgs::TriggerActivityMaker>> tf
+      = triggeralgs::TriggerActivityFactory::get_instance();
   // this part however, needs to be changed around if we do that
   std::unique_ptr<triggeralgs::TriggerActivityMaker> alg;
 
@@ -128,7 +126,7 @@ void duneana::TriggerActivityMakerOnlineTPC::beginJob() {
     // TODO handle possible different types
     // from what I've seen it's only uint64's and bools
     // but we can just use 0 and 1 for those
-    algconfig_json[k] = algconfig.get<uint64_t>(k);
+    algconfig_json[k] = algconfig.get<uint32_t>(k);
   }
 
   // build the TAMaker algorithm using the factory
@@ -136,7 +134,9 @@ void duneana::TriggerActivityMakerOnlineTPC::beginJob() {
 
   // TODO find out about LArSoft's actual error handling system
   // check if the algorithm is not a nullptr
-  assert(alg != nullptr);
+  if(!alg){
+    throw "Invalid Algorithm!";
+  }
 
   // call the configure method on the trigger algorithm using the json object
   // previously parsed from the sub-parameterset in the job config
@@ -183,10 +183,8 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
   for (size_t i = 0; i < tp_vec.size(); ++i) {
     readout::ROPID rop = geom->ChannelToROP(tp_vec.at(i).channel);
     tp_by_rop[rop].push_back(
-        std::pair<size_t, TriggerPrimitive>(i, tp_vec.at(i)));
+        std::make_pair(i, tp_vec.at(i)));
   }
-
-
 
   // now we process each ROP
   for (auto &tps : tp_by_rop) {
@@ -206,7 +204,6 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
       }
     }
 
-
     if (verbosity >= TriggerSim::Verbosity::kInfo && created_tas.size() > 0) {
         std::cout << "Created " << created_tas.size() << " TAs on ROP " << tps.first << std::endl;
     }
@@ -223,7 +220,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
 
       // add output ta to the ta dataproduct vector and create a PtrVector for
       // the TPs in the TA
-      ta_vec_ptr->emplace_back(TriggerActivityData(out_ta));
+      ta_vec_ptr->emplace_back(out_ta);
       art::PtrVector<TriggerPrimitive> tp_in_ta_ptrs;
 
       // now loop through each TP in the TA to handle associations
