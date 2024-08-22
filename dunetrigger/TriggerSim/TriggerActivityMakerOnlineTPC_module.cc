@@ -60,7 +60,9 @@ public:
 private:
   // fields for job configuration
   std::string algname;
-  fhicl::ParameterSet algconfig;
+  fhicl::ParameterSet algconfig_apa0;
+  fhicl::ParameterSet algconfig_apa1;
+  fhicl::ParameterSet algconfig_apa2;
   art::InputTag tp_tag;
 
   std::vector<raw::ChannelID_t> channel_mask;
@@ -80,7 +82,7 @@ private:
   std::shared_ptr<triggeralgs::AbstractFactory<triggeralgs::TriggerActivityMaker>> tf
       = triggeralgs::TriggerActivityFactory::get_instance();
   // this part however, needs to be changed around if we do that
-  std::unique_ptr<triggeralgs::TriggerActivityMaker> alg;
+  //std::unique_ptr<triggeralgs::TriggerActivityMaker> alg;
 
   // small function to compare tps by time
   static bool compareTriggerPrimitive(const TriggerPrimitiveIdx &tp1,
@@ -98,12 +100,22 @@ private:
             tp1.time_peak == tp2.time_peak &&
             tp1.adc_integral == tp2.adc_integral);
   }
+
+  static nlohmann::json get_alg_config(fhicl::ParameterSet& pset_config){
+    nlohmann::json algconfig;
+    for(auto k : pset_config.get_all_keys()){
+      algconfig[k] = pset_config.get<uint32_t>(k);
+    }
+    return algconfig;
+  }
 };
 
 duneana::TriggerActivityMakerOnlineTPC::TriggerActivityMakerOnlineTPC(
     fhicl::ParameterSet const &p)
     : EDProducer{p}, algname(p.get<std::string>("algorithm")),
-      algconfig(p.get<fhicl::ParameterSet>("algconfig")),
+      algconfig_apa0(p.get<fhicl::ParameterSet>("algconfig_apa0")),
+      algconfig_apa1(p.get<fhicl::ParameterSet>("algconfig_apa1")),
+      algconfig_apa2(p.get<fhicl::ParameterSet>("algconfig_apa2")),
       tp_tag(p.get<art::InputTag>("tp_tag")),
       channel_mask(p.get<std::vector<raw::ChannelID_t>>("channel_mask", std::vector<raw::ChannelID_t>{})),
       verbosity(p.get<int>("verbosity", 1))
@@ -120,28 +132,6 @@ duneana::TriggerActivityMakerOnlineTPC::TriggerActivityMakerOnlineTPC(
 }
 
 void duneana::TriggerActivityMakerOnlineTPC::beginJob() {
-
-  nlohmann::json algconfig_json;
-  for (auto k : algconfig.get_all_keys()) {
-    // TODO handle possible different types
-    // from what I've seen it's only uint64's and bools
-    // but we can just use 0 and 1 for those
-    algconfig_json[k] = algconfig.get<uint32_t>(k);
-  }
-
-  // build the TAMaker algorithm using the factory
-  alg = tf->build_maker(algname);
-
-  // TODO find out about LArSoft's actual error handling system
-  // check if the algorithm is not a nullptr
-  if(!alg){
-    throw "Invalid Algorithm!";
-  }
-
-  // call the configure method on the trigger algorithm using the json object
-  // previously parsed from the sub-parameterset in the job config
-  alg->configure(algconfig_json);
-
   // nice printout of channel mask
   if (verbosity >= TriggerSim::Verbosity::kInfo) {
     std::cout << "Masked Channels:";
@@ -186,13 +176,37 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
         std::make_pair(i, tp_vec.at(i)));
   }
 
-  // create a vector for the created TAs in the online format
-  std::vector<triggeralgs::TriggerActivity> created_tas = {};
 
   // now we process each ROP
   for (auto &tps : tp_by_rop) {
-    // first we need to sort by time
+    // make the algorithm
+    std::shared_ptr<triggeralgs::TriggerActivityMaker> alg = tf->build_maker(algname);
+
+    // throw an error if an invalid algorithm name is passed
+    if(!alg){
+      throw "Invalid Algorithm!";
+    }
+
+    // get the APA from the ROP we are on
+    auto plane = geom->ROPtoWirePlanes(tps.first).at(0).Plane;
+    // configure the algorithm accordingly
+    switch(plane){
+      case 0:
+        alg->configure(get_alg_config(algconfig_apa0));
+        break;
+      case 1:
+        alg->configure(get_alg_config(algconfig_apa1));
+        break;
+      case 2:
+        alg->configure(get_alg_config(algconfig_apa2));
+        break;
+    }
+
+    // first we need to sort the TPs by time
     std::sort(tps.second.begin(), tps.second.end(), compareTriggerPrimitive);
+
+    // create a vector for the created TAs in the online format
+    std::vector<triggeralgs::TriggerActivity> created_tas = {};
 
     // and now loop through the TPs and create TAs
     for (auto &tp : tps.second) {
@@ -247,6 +261,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
       // add the associations to the tp_in_ta assoc
       tp_in_tas_assn_ptr->addMany(taPtr, tp_in_ta_ptrs);
     }
+    created_tas.clear();
   }
   // Move the TAs and Associations onto the event
   e.put(std::move(ta_vec_ptr));
