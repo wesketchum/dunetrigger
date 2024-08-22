@@ -186,13 +186,14 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
         std::make_pair(i, tp_vec.at(i)));
   }
 
+  // create a vector for the created TAs in the online format
+  std::vector<triggeralgs::TriggerActivity> created_tas = {};
+
   // now we process each ROP
   for (auto &tps : tp_by_rop) {
     // first we need to sort by time
     std::sort(tps.second.begin(), tps.second.end(), compareTriggerPrimitive);
 
-    // create a vector for the created TAs in the online format
-    std::vector<triggeralgs::TriggerActivity> created_tas = {};
     // and now loop through the TPs and create TAs
     for (auto &tp : tps.second) {
       // check that the tp is not in the channel mask
