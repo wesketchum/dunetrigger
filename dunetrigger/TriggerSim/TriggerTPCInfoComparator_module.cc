@@ -52,6 +52,8 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "dunetrigger/TriggerSim/Verbosity.hh"
+
 // Additional framework includes
 #include "art_root_io/TFileDirectory.h"
 #include "art_root_io/TFileService.h"
@@ -176,7 +178,7 @@ void duneana::TriggerTPCInfoComparator::analyze(art::Event const& e)
   // Load the geometry service
   art::ServiceHandle<geo::Geometry> geom;
 
-  if(verbosity_>0)
+  if(verbosity_ >= Verbosity::kInfo)
   {
     std::cout << "Offline summary" << std::endl; 
     std::cout << "Found " << fTriggerPrimitive.size() << " TPs" << std::endl;
