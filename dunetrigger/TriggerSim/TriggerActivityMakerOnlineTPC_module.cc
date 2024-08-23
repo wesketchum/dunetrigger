@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace duneana {
 class TriggerActivityMakerOnlineTPC;
@@ -179,7 +180,8 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
 
   // now we process each ROP
   for (auto &tps : tp_by_rop) {
-    // make the algorithm
+    // make the algorithm here so that we reset the internal state for each ROP
+    // - since I believe those are independent for the TAMaker 
     std::shared_ptr<triggeralgs::TriggerActivityMaker> alg = tf->build_maker(algname);
 
     // throw an error if an invalid algorithm name is passed
@@ -190,17 +192,20 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
     // get the APA from the ROP we are on
     auto plane = geom->ROPtoWirePlanes(tps.first).at(0).Plane;
     // configure the algorithm accordingly
+    // we might want to access the algconfig separately later
+    nlohmann::json this_algconfig;
     switch(plane){
       case 0:
-        alg->configure(get_alg_config(algconfig_apa0));
+        this_algconfig = get_alg_config(algconfig_apa0);
         break;
       case 1:
-        alg->configure(get_alg_config(algconfig_apa1));
+        this_algconfig = get_alg_config(algconfig_apa1);
         break;
       case 2:
-        alg->configure(get_alg_config(algconfig_apa2));
+        this_algconfig = get_alg_config(algconfig_apa2);
         break;
     }
+    alg->configure(this_algconfig);
 
     // first we need to sort the TPs by time
     std::sort(tps.second.begin(), tps.second.end(), compareTriggerPrimitive);
@@ -212,7 +217,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
     for (auto &tp : tps.second) {
       // check that the tp is not in the channel mask
       if(std::find(channel_mask.begin(), channel_mask.end(), tp.second.channel) == channel_mask.end()){
-        alg->operator()(tp.second, created_tas);
+        (*alg)(tp.second, created_tas);
       }
       else if(verbosity >= TriggerSim::Verbosity::kDebug){
           std::cout << "Ignoring Masked TP on channel: " << tp.second.channel << std::endl;
@@ -261,7 +266,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
       // add the associations to the tp_in_ta assoc
       tp_in_tas_assn_ptr->addMany(taPtr, tp_in_ta_ptrs);
     }
-    created_tas.clear();
+    //created_tas.clear();
   }
   // Move the TAs and Associations onto the event
   e.put(std::move(ta_vec_ptr));
