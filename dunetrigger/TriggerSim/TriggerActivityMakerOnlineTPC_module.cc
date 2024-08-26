@@ -85,6 +85,8 @@ private:
   // this part however, needs to be changed around if we do that
   //std::unique_ptr<triggeralgs::TriggerActivityMaker> alg;
 
+
+  std::map<readout::ROPID, std::shared_ptr<triggeralgs::TriggerActivityMaker>> maker_per_plane;
   // small function to compare tps by time
   static bool compareTriggerPrimitive(const TriggerPrimitiveIdx &tp1,
                                       const TriggerPrimitiveIdx &tp2) {
@@ -177,12 +179,17 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
         std::make_pair(i, tp_vec.at(i)));
   }
 
-
   // now we process each ROP
   for (auto &tps : tp_by_rop) {
+    if(maker_per_plane.count(tps.first) == 0){
+      if(verbosity >= TriggerSim::Verbosity::kInfo){
+        std::cout << "Creating Maker on Plane " << tps.first << std::endl;
+      }
+      maker_per_plane[tps.first] = tf->build_maker(algname);
+    }
     // make the algorithm here so that we reset the internal state for each ROP
     // - since I believe those are independent for the TAMaker 
-    std::shared_ptr<triggeralgs::TriggerActivityMaker> alg = tf->build_maker(algname);
+    std::shared_ptr<triggeralgs::TriggerActivityMaker> alg = maker_per_plane[tps.first];
 
     // throw an error if an invalid algorithm name is passed
     if(!alg){
@@ -203,6 +210,9 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
         break;
       case 2:
         this_algconfig = get_alg_config(algconfig_apa2);
+        break;
+      default:
+        this_algconfig = get_alg_config(algconfig_apa0);
         break;
     }
     alg->configure(this_algconfig);
@@ -266,7 +276,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
       // add the associations to the tp_in_ta assoc
       tp_in_tas_assn_ptr->addMany(taPtr, tp_in_ta_ptrs);
     }
-    //created_tas.clear();
+    created_tas.clear();
   }
   // Move the TAs and Associations onto the event
   e.put(std::move(ta_vec_ptr));
