@@ -29,11 +29,14 @@
 #include "detdataformats/trigger/TriggerActivityData.hpp"
 #include "detdataformats/trigger/TriggerCandidateData.hpp"
 
+#include "dunetrigger/TriggerSim/Verbosity.hh"
+
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace duneana {
 class TriggerCandidateMakerOnlineTPC;
@@ -68,6 +71,7 @@ private:
   std::unique_ptr<triggeralgs::TriggerCandidateMaker> alg;
 
   int verbosity;
+
 
   typedef std::pair<size_t, dunedaq::trgdataformats::TriggerActivityData>
       TriggerActivityIdx;
@@ -126,16 +130,12 @@ void duneana::TriggerCandidateMakerOnlineTPC::produce(art::Event &e) {
   std::vector<TriggerActivityData> ta_vec = *ta_handle;
 
   // some unique pointers to new vectors for the data products
-  auto ta_vec_ptr = std::make_unique<std::vector<TriggerActivityData>>();
   auto tc_vec_ptr = std::make_unique<std::vector<TriggerCandidateData>>();
   auto ta_in_tc_assn_ptr =
       std::make_unique<art::Assns<TriggerCandidateData, TriggerActivityData>>();
 
   // PtrMaker to make pointers to the new TCs
   art::PtrMaker<TriggerCandidateData> tc_ptr_maker{e};
-
-  // sort the TAs by time
-  // std::sort(ta_vec.begin(), ta_vec.end(), compareTriggerActivity);
 
   // create a vector of inputs with the 'file' index of the TA
   std::vector<TriggerActivityIdx> input_tas(ta_vec.size());
@@ -145,7 +145,7 @@ void duneana::TriggerCandidateMakerOnlineTPC::produce(art::Event &e) {
 
   // now we sort the TAs by time using a lambda as the comparison function which
   // pulls out the second element of the pair. Alternatively, we can rewrite the
-  // comparison function to use the pairs
+  // comparison function to use the pairs (although that makes it less versatile)
   std::sort(input_tas.begin(), input_tas.end(),
             [](TriggerActivityIdx &ta1, TriggerActivityIdx &ta2) {
               return compareTriggerActivity(ta1.second, ta2.second);
@@ -158,24 +158,32 @@ void duneana::TriggerCandidateMakerOnlineTPC::produce(art::Event &e) {
 
   // if there's a better way to do this, I'd love to know it though
 
-  std::vector<triggeralgs::TriggerCandidate> produced_tcs;
+  // create a vector of online TCs for the online algorithm to store it's
+  // outputs in
+  std::vector<triggeralgs::TriggerCandidate> produced_tcs = {};
+
+  // process the input TAs
   for (const auto &ta : input_tas) {
-    alg->operator()(ta.second, produced_tcs);
+    (*alg)(ta.second, produced_tcs);
   }
 
   // now we need to handle the associations
   for (auto out_tc : produced_tcs) {
     // make an art pointer to the tc vector
     auto const tcPtr = tc_ptr_maker(tc_vec_ptr->size());
+
     // emplace the new tc onto the back of it
     tc_vec_ptr->emplace_back(out_tc);
 
+    // now make a PtrVector for the associations
     art::PtrVector<TriggerActivityData> tas_in_tc_ptr;
 
-    // and now get the TA out of it :)
+    // and now get the TAs out of the processed TC :)
     for (const TriggerActivityData &in_ta : out_tc.inputs) {
 
       // get an iterator to the first matching TA
+      // here we need to use a lambda to pull the second element out of the
+      // <size_t, TriggerActivityData> pair
       std::vector<TriggerActivityIdx>::iterator ta_it = std::find_if(
           input_tas.begin(), input_tas.end(),
           [&](TriggerActivityIdx &t) { return isTAEqual(in_ta, t.second); });
@@ -190,17 +198,21 @@ void duneana::TriggerCandidateMakerOnlineTPC::produce(art::Event &e) {
               return isTAEqual(in_ta, t.second);
             });
       }
-    }
 
-    // add the association
+      // pritn a debug message if we can't find and associated TAs
+      if(tas_in_tc_ptr.empty() && verbosity >= Verbosity::kDebug ){
+        std::cout << "No associated TAs found for TC!" << std::endl;
+      }
+    }
+    // add the associations
     ta_in_tc_assn_ptr->addMany(tcPtr, tas_in_tc_ptr);
   }
-  // and move onto the event
 
-  if (verbosity >= 1) {
+  if (verbosity >= Verbosity::kInfo) {
     std::cout << "Created " << produced_tcs.size() << " TCs" << std::endl;
-    std::cout << "TC PtrVec Size " << tc_vec_ptr->size() << std::endl;
   }
+
+  // move the produced things onto the event 
   e.put(std::move(tc_vec_ptr));
   e.put(std::move(ta_in_tc_assn_ptr));
 }
