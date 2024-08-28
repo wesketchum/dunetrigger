@@ -276,7 +276,6 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
       // add the associations to the tp_in_ta assoc
       tp_in_tas_assn_ptr->addMany(taPtr, tp_in_ta_ptrs);
     }
-    created_tas.clear();
   }
   // Move the TAs and Associations onto the event
   e.put(std::move(ta_vec_ptr));
