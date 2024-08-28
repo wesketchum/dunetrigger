@@ -1,0 +1,93 @@
+#include "services_dune.fcl"
+#include "tools_dune.fcl"
+
+process_name: TriggerSimOnline 
+
+services:
+{
+  TFileService: { fileName: "trigger_hist.root" }
+  TimeTracker:       @local::dune_time_tracker
+  MemoryTracker:     @local::dune_memory_tracker
+  RandomNumberGenerator: {} #ART native random number generator
+  message:              @local::dune_message_services_prod
+  #FileCatalogMetadata:  @local::art_file_catalog_mc
+  @table::dunefd_1x2x6_services
+  #  ChannelStatusService: @local::pdsp_channel_status
+  IFDH: {}
+}
+
+source:
+{
+  module_type: RootInput
+  maxEvents:  10 # Number of events to create
+  saveMemoryObjectThreshold: 0
+}
+
+algconfig_ta:
+{
+	 	window_length: 100 
+		adc_threshold: 20 
+}
+
+physics:
+{
+
+ producers:
+ {
+     tpmakerTPC:
+     {
+	module_type: TriggerPrimitiveMakerTPC
+	rawdigit_tag: "daq"
+	tpalg: {
+		tool_type: TPAlgTPCSimpleThreshold
+		verbosity: 0
+		threshold_tpg_plane0: 25 
+		threshold_tpg_plane1: 25 
+		threshold_tpg_plane2: 25
+	}
+     }
+
+     tamakerTPC:
+     {
+         module_type: TriggerActivityMakerOnlineTPC
+         tp_tag: "tpmakerTPC"
+	 algorithm: "TriggerActivityMakerADCSimpleWindowPlugin"
+	 algconfig_apa0: @local::algconfig_ta 
+	 algconfig_apa1: @local::algconfig_ta
+	 algconfig_apa2: @local::algconfig_ta
+         verbosity: 0
+     }
+
+     tcmakerTPC:
+     {
+	module_type: TriggerCandidateMakerOnlineTPC
+	ta_tag: "tamakerTPC"
+	algorithm: "TriggerCandidateMakerADCSimpleWindowPlugin"
+	algconfig: {
+		window_length: 8000
+		adc_threshold: 100
+		}	
+	verbosity: 0
+     }
+ }
+
+
+
+ stream1:  [ out1 ]
+ reco: [ tpmakerTPC, tamakerTPC, tcmakerTPC ]
+ trigger_paths: [ reco ]
+
+ end_paths:     [stream1]
+}
+
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "tc_output.root"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+ }
+}
+
