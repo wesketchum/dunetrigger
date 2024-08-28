@@ -8,6 +8,7 @@
 #include "larcore/Geometry/Geometry.h"
 
 #include "dunetrigger/TriggerSim/TPAlgTools/TPAlgTPCTool.hh"
+#include "dunetrigger/TriggerSim/Verbosity.hh"
 
 #include <map>
 #include <limits>
@@ -38,7 +39,7 @@ namespace duneana {
         else if(plane==1) threshold_=threshold_tpg_plane1_;
         else if(plane==2) threshold_=threshold_tpg_plane2_;
 
-        if(verbosity_>1) {
+        if(verbosity_ >= Verbosity::kInfo) {
             std::cout << "Channel: " << channel
                       << ", ROP: " << plane
                       << ", Threshold: " << threshold_
