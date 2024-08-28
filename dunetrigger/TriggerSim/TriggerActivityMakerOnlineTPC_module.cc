@@ -24,7 +24,7 @@
 #include "detdataformats/trigger/TriggerActivityData.hpp"
 #include "detdataformats/trigger/TriggerPrimitive.hpp"
 
-#include "dunetrigger/TriggerSim/TriggerSimCommon.hh"
+#include "dunetrigger/TriggerSim/Verbosity.hh"
 
 #include "dunetrigger/triggeralgs/include/triggeralgs/TriggerActivity.hpp"
 #include "dunetrigger/triggeralgs/include/triggeralgs/TriggerActivityFactory.hpp"
@@ -136,7 +136,7 @@ duneana::TriggerActivityMakerOnlineTPC::TriggerActivityMakerOnlineTPC(
 
 void duneana::TriggerActivityMakerOnlineTPC::beginJob() {
   // nice printout of channel mask
-  if (verbosity >= TriggerSim::Verbosity::kInfo) {
+  if (verbosity >= Verbosity::kInfo) {
     std::cout << "Masked Channels:";
     for(raw::ChannelID_t c : channel_mask){
       std::cout << " " << c;
@@ -182,7 +182,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
   // now we process each ROP
   for (auto &tps : tp_by_rop) {
     if(maker_per_plane.count(tps.first) == 0){
-      if(verbosity >= TriggerSim::Verbosity::kInfo){
+      if(verbosity >= Verbosity::kInfo){
         std::cout << "Creating Maker on Plane " << tps.first << std::endl;
       }
       maker_per_plane[tps.first] = tf->build_maker(algname);
@@ -229,12 +229,12 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
       if(std::find(channel_mask.begin(), channel_mask.end(), tp.second.channel) == channel_mask.end()){
         (*alg)(tp.second, created_tas);
       }
-      else if(verbosity >= TriggerSim::Verbosity::kDebug){
+      else if(verbosity >= Verbosity::kDebug){
           std::cout << "Ignoring Masked TP on channel: " << tp.second.channel << std::endl;
       }
     }
 
-    if (verbosity >= TriggerSim::Verbosity::kInfo && created_tas.size() > 0) {
+    if (verbosity >= Verbosity::kInfo && created_tas.size() > 0) {
         std::cout << "Created " << created_tas.size() << " TAs on ROP " << tps.first << std::endl;
     }
 
