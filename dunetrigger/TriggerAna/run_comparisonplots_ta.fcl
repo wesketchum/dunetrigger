@@ -1,0 +1,49 @@
+#include "services_refactored_pdune.fcl"
+#include "protodune_tools_dune.fcl"
+#include "tools_dune.fcl"
+
+process_name: TriggerTPCComparator
+
+services:
+{
+  TFileService: { fileName: "taComparison_hist.root" }
+  TimeTracker:       @local::dune_time_tracker
+  MemoryTracker:     @local::dune_memory_tracker
+  RandomNumberGenerator: {} #ART native random number generator
+  message:              @local::dune_message_services_prod
+  #FileCatalogMetadata:  @local::art_file_catalog_mc
+                        @table::protodunehd_reco_services
+                        @table::protodunehd_services
+  #  ChannelStatusService: @local::pdsp_channel_status
+  IFDH: {}
+}
+
+source:
+{
+  module_type: RootInput
+  maxEvents:  100        # Number of events to create
+  saveMemoryObjectThreshold: 0
+}
+
+physics:
+{
+
+  analyzers:
+ {
+     triggerTPCInfoComparison:
+     {
+         module_type: TriggerActivityComparison
+         sim_ta_tag: "tamakerTPC"
+         tp_tag: "triggerrawdecoder:daq"
+         #daq_ta_tag: "triggerrawdecoder:daq:pdhdkeepupstage1"
+         daq_ta_tag: "triggerrawdecoder:daqinTCs"
+         verbosity: 1
+     }
+ }
+
+ ana:       [ triggerTPCInfoComparison ]
+
+ end_paths: [ ana ]
+}
+
+
