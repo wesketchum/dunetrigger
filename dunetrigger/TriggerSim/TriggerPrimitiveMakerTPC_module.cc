@@ -27,6 +27,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "canvas/Persistency/Common/FindOneP.h"
+#include "dunetrigger/TriggerSim/Verbosity.hh"
 
 #include <memory>
 #include <iostream>
@@ -94,7 +95,7 @@ void duneana::TriggerPrimitiveMakerTPC::produce(art::Event& e)
 
   auto rawdigit_vec = *rawdigit_handle;
 
-  if(verbosity_>0)
+  if(verbosity_ >= Verbosity::kInfo)
     std::cout << "Found " << rawdigit_vec.size() << " raw::RawDigits" << std::endl;
 
   uint64_t this_timestamp = default_timestamp_;
