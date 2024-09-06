@@ -117,14 +117,26 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
     auto rop = geom->ChannelToROP(tp_vec[i_tp].channel);
 
     //TPs in the colleciton plane arrive in two sets, eg for APA1, they have rops (0, 0, 2) and (0, 0, 3)
-    //merging the two TP sets (fixme: it is only working for data when only collection plane was active, eg, PD-2 run028508)
-    readout::ROPID c0_r0_t2 = {0, 0, 2}, c0_r1_t2 = {0, 1, 2}, c0_r2_t2 = {0, 2, 2}, c0_r3_t2 = {0, 3, 2}; 
+    //merging the two TP sets (fixme: it is only working for 4 detector module setup for the moment)
+    readout::ROPID c0_r0_t0 = {0, 0, 0}, c0_r1_t0 = {0, 1, 0}, c0_r2_t0 = {0, 2, 0}, c0_r3_t0 = {0, 3, 0}; 
+    readout::ROPID c0_r0_t1 = {0, 0, 1}, c0_r1_t1 = {0, 1, 1}, c0_r2_t1 = {0, 2, 1}, c0_r3_t1 = {0, 3, 1};
+    readout::ROPID c0_r0_t2 = {0, 0, 2}, c0_r1_t2 = {0, 1, 2}, c0_r2_t2 = {0, 2, 2}, c0_r3_t2 = {0, 3, 2};
     readout::ROPID c0_r0_t3 = {0, 0, 3}, c0_r1_t3 = {0, 1, 3}, c0_r2_t3 = {0, 2, 3}, c0_r3_t3 = {0, 3, 3};
     int det_module = 0;
-    if (rop == c0_r0_t2 || rop == c0_r0_t3 ) det_module = 0;
-    else if (rop == c0_r1_t2 || rop == c0_r1_t3) det_module = 1;
-    else if (rop == c0_r2_t2 || rop == c0_r2_t3) det_module = 2;
-    else if (rop == c0_r3_t2 || rop == c0_r3_t3) det_module = 3;
+    if (c0_r0_t0) det_module = 0;
+    if (c0_r1_t0) det_module = 1;
+    if (c0_r2_t0) det_module = 2;
+    if (c0_r3_t0) det_module = 3;
+
+    if (c0_r0_t1) det_module = 10;
+    if (c0_r1_t1) det_module = 11;
+    if (c0_r2_t1) det_module = 12;
+    if (c0_r3_t1) det_module = 13;
+
+    if (rop == c0_r0_t2 || rop == c0_r0_t3) det_module = 20;
+    if (rop == c0_r1_t2 || rop == c0_r1_t3) det_module = 21;
+    if (rop == c0_r2_t2 || rop == c0_r2_t3) det_module = 22;
+    if (rop == c0_r3_t2 || rop == c0_r3_t3) det_module = 23;
     tps_per_rop_map[det_module].push_back( art::Ptr<dunedaq::trgdataformats::TriggerPrimitive>(tp_handle,i_tp) );
   }
 
