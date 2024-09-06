@@ -109,12 +109,23 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
   if(verbosity_>0)
     std::cout << "Found " << tp_vec.size() << " TPs" << std::endl;
 
-  //need to sort TPs by ROP (APA, CRP...)
+  //need to sort TPs per plane per detector module (APA, CRP...)
   //note: use art::PtrVector here since we are going to need to store the assn between TA and TPs
-  std::map< readout::ROPID,art::PtrVector<dunedaq::trgdataformats::TriggerPrimitive> > tps_per_rop_map;
+  std::map< int, art::PtrVector<dunedaq::trgdataformats::TriggerPrimitive> > tps_per_rop_map;
   for( size_t i_tp=0; i_tp < tp_vec.size(); ++i_tp) {
+
     auto rop = geom->ChannelToROP(tp_vec[i_tp].channel);
-    tps_per_rop_map[rop].push_back( art::Ptr<dunedaq::trgdataformats::TriggerPrimitive>(tp_handle,i_tp) );
+
+    //TPs in the colleciton plane arrive in two sets, eg for APA1, they have rops (0, 0, 2) and (0, 0, 3)
+    //merging the two TP sets (fixme: it is only working for data when only collection plane was active, eg, PD-2 run028508)
+    readout::ROPID c0_r0_t2 = {0, 0, 2}, c0_r1_t2 = {0, 1, 2}, c0_r2_t2 = {0, 2, 2}, c0_r3_t2 = {0, 3, 2}; 
+    readout::ROPID c0_r0_t3 = {0, 0, 3}, c0_r1_t3 = {0, 1, 3}, c0_r2_t3 = {0, 2, 3}, c0_r3_t3 = {0, 3, 3};
+    int det_module = 0;
+    if (rop == c0_r0_t2 || rop == c0_r0_t3 ) det_module = 0;
+    else if (rop == c0_r1_t2 || rop == c0_r1_t3) det_module = 1;
+    else if (rop == c0_r2_t2 || rop == c0_r2_t3) det_module = 2;
+    else if (rop == c0_r3_t2 || rop == c0_r3_t3) det_module = 3;
+    tps_per_rop_map[det_module].push_back( art::Ptr<dunedaq::trgdataformats::TriggerPrimitive>(tp_handle,i_tp) );
   }
 
   //now, per map, we need to sort the tps by time
@@ -123,7 +134,7 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
     std::sort(tps.second.begin(),tps.second.end(),compareTriggerPrimitive);
 
     if(verbosity_>0){
-      std::cout << "\t ROP: " << tps.first << std::endl;
+      std::cout << "\t Detector module number: " << tps.first << std::endl;
       std::cout << "\t\t " << tps.second.size() << " TPs between [" 
 		<< tps.second.front()->time_start << ", " << tps.second.back()->time_start
 		<< "]" << std::endl;
@@ -131,7 +142,7 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
 
     //create an output vector and initialize our taalg
     std::vector< TAAlgTPCTool::TriggerActivity> tas_out;
-    taalg_->initialize();
+    // taalg_->initialize();
 
     //loop through the TPs and process
     for( auto const& tp : tps.second)

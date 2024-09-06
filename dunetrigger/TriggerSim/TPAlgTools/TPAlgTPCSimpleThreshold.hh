@@ -15,7 +15,7 @@
 
 namespace duneana {
 
-  class TPAlgTPCSimpleThreshold : public TPAlgTPCTool {
+ class TPAlgTPCSimpleThreshold : public TPAlgTPCTool {
 
   public:
     explicit TPAlgTPCSimpleThreshold(fhicl::ParameterSet const& ps) :
@@ -48,23 +48,23 @@ namespace duneana {
         //find the mode of the whole vector
         std::map<short,size_t> counts_per_value;
         for(auto const& adc : adcs)
-            counts_per_value[adc] += 1;
+	  counts_per_value[adc] += 1;
         size_t max_counts=0;
         for(auto it=counts_per_value.begin(); it!= counts_per_value.end(); ++it) {
-            if (it->second > max_counts){
-                pedestal_ = it->first;
-                max_counts = it->second;
-            }
+	  if (it->second > max_counts){
+	    pedestal_ = it->first;
+	    max_counts = it->second;
+	  }
         }
-
+	
         accum_ = 0;
-
+	
         prev_was_over_=0;
         hit_charge_=0;
         hit_tover_=0;
         hit_peak_adc_=0;
         hit_peak_time_=0;
-
+	
     }
 
     void frugal_accum_update(const int16_t sample)
@@ -100,10 +100,15 @@ namespace duneana {
         //for this channel, reinitialize the channel state variables
         initialize_channel_state(channel, adcs);
 
+	// std::cout<<" channel "<<channel<<" adcs.size() "<<adcs.size()<<" pedestal_ "<<pedestal_<<" start_time "<<start_time<<"\n";
+
         for(size_t i_t=0; i_t<adcs.size(); ++i_t){
 
+	  //if threshold < 0, the plane is not used to produce TPs
+	  if (threshold_ < 0) continue; 
+
             //get the sample
-            int16_t sample = adcs[i_t];
+	    int16_t sample = adcs[i_t];
 
             //update the pedestal estimate
             frugal_accum_update(sample);
@@ -120,7 +125,7 @@ namespace duneana {
                 //first, need to saturate hit_charge at int16
                 int32_t tmp_charge = hit_charge_;
                 tmp_charge += sample;
-                tmp_charge = std::min(tmp_charge, (int32_t)std::numeric_limits<int16_t>::max());
+                // tmp_charge = std::min(tmp_charge, (int32_t)std::numeric_limits<int16_t>::max()); // 32767
 
                 //check if we're at the peak adc
                 if(sample > hit_peak_adc_){
@@ -129,14 +134,14 @@ namespace duneana {
                 }
 
                 //update charge and time over threshold
-                hit_charge_ = (int16_t)tmp_charge;
+                hit_charge_ = (uint16_t)tmp_charge;
                 ++hit_tover_;
             }
             if(prev_was_over_ && !is_over)
             {
                 //we've reached the end of the hit, so need to create a TP and write it out
 
-	        this_tp.time_start = start_time + (i_t - hit_tover_)*this->ADC_SAMPLING_RATE_IN_DTS;
+	        this_tp.time_start = start_time + (i_t - hit_tover_ )*this->ADC_SAMPLING_RATE_IN_DTS;
                 this_tp.time_over_threshold = hit_tover_*this->ADC_SAMPLING_RATE_IN_DTS;
                 this_tp.time_peak = start_time + (i_t - hit_tover_ + hit_peak_time_)*this->ADC_SAMPLING_RATE_IN_DTS;
                 this_tp.adc_integral = hit_charge_;

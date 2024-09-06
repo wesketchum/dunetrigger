@@ -24,7 +24,7 @@ namespace duneana {
       dunedaq::trgdataformats::TriggerActivityData ta;
       
       dunedaq::trgdataformats::TriggerPrimitive last_tp = current_window_.inputs.back();
-      
+
       ta.time_start = last_tp.time_start;
       ta.time_end = last_tp.time_start;
       ta.time_peak = last_tp.time_peak;
@@ -37,7 +37,7 @@ namespace duneana {
       ta.detid = last_tp.detid;
       ta.type = dunedaq::trgdataformats::TriggerActivityData::Type::kTPC;
       ta.algorithm = dunedaq::trgdataformats::TriggerActivityData::Algorithm::kADCSimpleWindow;
-      
+
       for (const auto& tp : current_window_.inputs) {
 	ta.time_start = std::min(ta.time_start, tp.time_start);
 	ta.time_end = std::max(ta.time_end, tp.time_start);
@@ -58,24 +58,25 @@ namespace duneana {
     void process_tp(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp,
 		    std::vector<TriggerActivity> & tas_out)
     {
-      
-      ta_current_.second.push_back(tp);
 
       dunedaq::trgdataformats::TriggerPrimitive input_tp = *tp;
 
       // For the first TP, reset the window object.
       if (current_window_.is_empty()) {
-	if (verbosity_ > 1) std::cout << " TP Start Time: " << input_tp.time_start << ", TP ADC Sum: " << input_tp.adc_integral
+	current_window_.reset(input_tp);
+	ta_current_.second.push_back(tp);
+
+	if (verbosity_ > 1) std::cout << " TP start Time: " << input_tp.time_start << ", TP ADC Sum: " << input_tp.adc_integral
 				      << ", TP TOT: " << input_tp.time_over_threshold << ", TP ADC Peak: " << input_tp.adc_peak
 				      << ", TP Offline Channel ID: " << input_tp.channel << "\n";
-	current_window_.reset(input_tp);
 	return;
       } 
-
+      
       // If the difference between the current TP's start time and the window's start time
       // is less than the specified window length, add the TP to the window
       if ((input_tp.time_start - current_window_.time_start) < window_length_) {
 	current_window_.add(input_tp);
+	ta_current_.second.push_back(tp);
       }
       // If the addition of the current TP to the window makes it longer
       // than the specified window length, don't add it but check whether the adc integral in
@@ -83,33 +84,35 @@ namespace duneana {
       // a fresh window with the current TP.
       else if (current_window_.adc_integral > adc_threshold_) {
 	ta_current_.first = construct_ta();
-
+	
 	tas_out.push_back(ta_current_);
 	ta_current_.second.clear();
 	ta_current_.second.push_back(tp);
-
+	
 	current_window_.reset(input_tp);
       }
       // If false, move the window along
-      else{
+      else {
 	current_window_.move(input_tp, window_length_);
-
+	ta_current_.second.push_back(tp);
+	
+	// removing tps from ta_current_.second which are removed from current_window_ using move()
 	art::PtrVector<dunedaq::trgdataformats::TriggerPrimitive> tmp_tp_vec = ta_current_.second;
 	ta_current_.second.clear();
-	for (const auto& tp_window : current_window_.inputs) {
+	for (const auto tp_window : current_window_.inputs) {
 	  for (const auto& tp_tmp : tmp_tp_vec) {
-	    if (tp_window.time_start == (*tp_tmp).time_start && 
+	    if (tp_window.channel == (*tp_tmp).channel &&
+		tp_window.time_start == (*tp_tmp).time_start && 
+		tp_window.time_over_threshold == (*tp_tmp).time_over_threshold &&
+		tp_window.time_peak == (*tp_tmp).time_peak &&
 		tp_window.adc_integral == (*tp_tmp).adc_integral && 
-		tp_window.time_over_threshold == (*tp_tmp).time_over_threshold) {
+		tp_window.adc_peak == (*tp_tmp).adc_peak) {
 	      ta_current_.second.push_back(tp_tmp);
 	      break;
 	    }
 	  }
 	}
-	if (verbosity_ > 1 && current_window_.inputs.size() != ta_current_.second.size())
-	  std::cout<<"current_window_.inputs.size() "<<current_window_.inputs.size()<<" ta_current_.second.size() "<<ta_current_.second.size()<<"\n";
       }
-
       return;      
     }
     
@@ -122,7 +125,6 @@ namespace duneana {
     TPWindow current_window_;
     TriggerActivity ta_current_;
   };
-  
 }
 
 #endif

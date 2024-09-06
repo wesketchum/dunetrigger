@@ -37,6 +37,7 @@
 #include "art/Framework/Principal/SubRun.h"
 #include "art/Utilities/make_tool.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Persistency/Common/Assns.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -86,6 +87,7 @@ private:
 
   // Create output Tree
   TTree *fTPTree;
+  TTree *fTPfromTPTATree;
   TTree *fTATree;
   TTree *fTCTree;
 
@@ -97,7 +99,7 @@ private:
   ////////////////////////
   // fTPTree variables //
   ///////////////////////
-  using timestamp_t = int64_t;
+  using timestamp_t = uint64_t;
   using channel_t = uint32_t;
   using version_t = uint16_t;
   using detid_t = uint16_t;
@@ -112,6 +114,17 @@ private:
   detid_t fDetID;
   int fType;
   int fAlgorithm;
+
+  ///////////////////////////
+  // fTPfromTPTATree variables //
+  ///////////////////////////
+  int fTAnumber;
+  channel_t fChannelID_TPinTA;
+  timestamp_t fStart_time_TPinTA;
+  timestamp_t fTime_over_threshold_TPinTA;
+  timestamp_t fTime_peak_TPinTA;
+  uint32_t fADC_integral_TPinTA;
+  uint16_t fADC_peak_TPinTA;
 
   ////////////////////////
   // fTATree variables //
@@ -159,6 +172,8 @@ duneana::TriggerTPCInfoDisplay::TriggerTPCInfoDisplay(fhicl::ParameterSet const&
 {
   consumes<std::vector<dunedaq::trgdataformats::TriggerPrimitive>>(tp_tag_);
   consumes<std::vector<dunedaq::trgdataformats::TriggerActivityData>>(ta_tag_);
+  consumes<art::Assns<dunedaq::trgdataformats::TriggerActivityData, dunedaq::trgdataformats::TriggerPrimitive> >(ta_tag_);
+  consumes<art::Assns<dunedaq::trgdataformats::TriggerPrimitive, dunedaq::trgdataformats::TriggerActivityData> >(ta_tag_);
   consumes<std::vector<dunedaq::trgdataformats::TriggerCandidateData>>(tc_tag_);
 }
 
@@ -176,6 +191,14 @@ void duneana::TriggerTPCInfoDisplay::analyze(art::Event const& e)
   // Take TAs from event
   auto ta_handle = e.getValidHandle< std::vector<dunedaq::trgdataformats::TriggerActivityData> >(ta_tag_);
   fTriggerActivity = *ta_handle;
+
+  // Take TPs from TP-TA association from event
+  auto tpfromtpta_handle = e.getValidHandle< art::Assns<dunedaq::trgdataformats::TriggerPrimitive, dunedaq::trgdataformats::TriggerActivityData> >(ta_tag_);
+  auto fTPfromTPTA = *tpfromtpta_handle;
+
+  // Take TAs from TP-TA association from event
+  auto tafromtpta_handle = e.getValidHandle< art::Assns<dunedaq::trgdataformats::TriggerActivityData, dunedaq::trgdataformats::TriggerPrimitive> >(ta_tag_);
+  auto fTAfromTPTA = *tafromtpta_handle;
 
   // Take TCs from event
   auto tc_handle = e.getValidHandle< std::vector<dunedaq::trgdataformats::TriggerCandidateData> >(tc_tag_);
@@ -213,6 +236,31 @@ void duneana::TriggerTPCInfoDisplay::analyze(art::Event const& e)
     fTPTree -> Fill();
   }
 
+  // Fill TPinTA tree
+  uint32_t ta_adc_int = 0;
+  timestamp_t ta_start_time = 0;
+  int ta_count = 0;
+  for(long unsigned int i=0; i < fTPfromTPTA.size(); i++)
+  {
+    if (fTAfromTPTA[i].first->adc_integral != ta_adc_int && fTAfromTPTA[i].first->time_start != ta_start_time) {
+      ta_adc_int = fTAfromTPTA[i].first->adc_integral;
+      ta_start_time = fTAfromTPTA[i].first->time_start;
+      ta_count++;
+      std::cout<<"For TA number "<<ta_count<<", the adc_integral and start_time are "<<ta_adc_int<<" and "<<ta_start_time<<"\n";
+    }
+
+    fTAnumber = ta_count;
+    fChannelID_TPinTA = fTPfromTPTA[i].first->channel;
+    fStart_time_TPinTA = fTPfromTPTA[i].first->time_start;
+    fTime_over_threshold_TPinTA = fTPfromTPTA[i].first->time_over_threshold;
+    fTime_peak_TPinTA = fTPfromTPTA[i].first->time_peak;
+    fADC_integral_TPinTA = fTPfromTPTA[i].first->adc_integral;
+    fADC_peak_TPinTA = fTPfromTPTA[i].first->adc_peak;
+    
+    // Fill tree
+    fTPfromTPTATree -> Fill();
+  }
+  
   // Fill TA tree
   for(long unsigned int i=0; i < fTriggerActivity.size(); i++)
   {
@@ -252,6 +300,7 @@ void duneana::TriggerTPCInfoDisplay::beginJob()
   art::ServiceHandle<art::TFileService> tfs;
   // The TTrees
   fTPTree = tfs->make<TTree>("TPTree", "DAQ trigger primitive maker tree");
+  fTPfromTPTATree = tfs->make<TTree>("TPinTATree", "DAQ trigger primitive in trigger activity tree");
   fTATree = tfs->make<TTree>("TATree", "DAQ trigger activity maker tree");
   fTCTree = tfs->make<TTree>("TCTree", "DAQ trigger candidate maker tree");
   
@@ -273,6 +322,20 @@ void duneana::TriggerTPCInfoDisplay::beginJob()
   fTPTree -> Branch( "DetID" , &fDetID);
   fTPTree -> Branch( "Type" , &fType);
   fTPTree -> Branch( "Algorithm" , &fAlgorithm);
+
+  //////////////////////////////
+  // fTPfromTPTA tree information //
+  //////////////////////////////
+  fTPfromTPTATree -> Branch( "Event" , &fEventID, "Event/I"  );
+  fTPfromTPTATree -> Branch( "Run"   , &fRun    , "Run/I"    );
+  fTPfromTPTATree -> Branch( "SubRun", &fSubRun , "SubRun/I" );
+  fTPfromTPTATree -> Branch( "TAnumber", &fTAnumber , "TAnumber/I" );
+  fTPfromTPTATree -> Branch( "ChannelID" , &fChannelID_TPinTA);
+  fTPfromTPTATree -> Branch( "Start_time" , &fStart_time_TPinTA);
+  fTPfromTPTATree -> Branch( "Time_over_threshold" , &fTime_over_threshold_TPinTA);
+  fTPfromTPTATree -> Branch( "Time_peak" , &fTime_peak_TPinTA);
+  fTPfromTPTATree -> Branch( "ADC_integral" , &fADC_integral_TPinTA);
+  fTPfromTPTATree -> Branch( "ADC_peak" , &fADC_peak_TPinTA);
 
   ////////////////////////////////////////
   // fTriggerActivity tree information //

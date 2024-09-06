@@ -31,7 +31,6 @@
 // Generated at Mon Apr 29 11:24:28 2024 by Hamza Amar Es-sghir using cetskelgen
 // from  version .
 ////////////////////////////////////////////////////////////////////////
-
 #include "detdataformats/trigger/TriggerCandidateData.hpp"
 #include "detdataformats/trigger/TriggerActivityData.hpp"
 #include "detdataformats/trigger/TriggerPrimitive.hpp"
@@ -132,14 +131,14 @@ duneana::TriggerTPCInfoComparator::TriggerTPCInfoComparator(fhicl::ParameterSet 
   , verbosity_(p.get<int>("verbosity",0))
 {
   // Consumes offline trigger information
-  consumes<std::vector<dunedaq::trgdataformats::TriggerPrimitive>>(tp_tag_);
-  consumes<std::vector<dunedaq::trgdataformats::TriggerActivityData>>(ta_tag_);
-  consumes<std::vector<dunedaq::trgdataformats::TriggerCandidateData>>(tc_tag_);
+  consumes<std::vector<dunedaq::trgdataformats::TriggerPrimitive> >(tp_tag_);
+  consumes<std::vector<dunedaq::trgdataformats::TriggerActivityData> >(ta_tag_);
+  consumes<std::vector<dunedaq::trgdataformats::TriggerCandidateData> >(tc_tag_);
 
   // Consumes DAQ trigger information
-  consumes<std::vector<dunedaq::trgdataformats::TriggerPrimitive>>(daq_tag);
-  consumes<std::vector<dunedaq::trgdataformats::TriggerActivityData>>(daq_tag);
-  consumes<std::vector<dunedaq::trgdataformats::TriggerCandidateData>>(daq_tag);
+  consumes<std::vector<dunedaq::trgdataformats::TriggerPrimitive> >(daq_tag);
+  consumes<std::vector<dunedaq::trgdataformats::TriggerActivityData> >(daq_tag);
+  consumes<std::vector<dunedaq::trgdataformats::TriggerCandidateData> >(daq_tag);
 }
 
 void duneana::TriggerTPCInfoComparator::analyze(art::Event const& e)
@@ -199,29 +198,28 @@ void duneana::TriggerTPCInfoComparator::analyze(art::Event const& e)
     for (long unsigned int j = 0; j < fTriggerPrimitiveDAQ.size(); j++) {
       // Compare TPs and set comparison result
       if (fTriggerPrimitive[i].channel == fTriggerPrimitiveDAQ[j].channel &&
-        fTriggerPrimitive[i].time_start == fTriggerPrimitiveDAQ[j].time_start &&
-        fTriggerPrimitive[i].time_over_threshold == fTriggerPrimitiveDAQ[j].time_over_threshold &&
-        fTriggerPrimitive[i].time_peak == fTriggerPrimitiveDAQ[j].time_peak &&
-        fTriggerPrimitive[i].adc_integral == fTriggerPrimitiveDAQ[j].adc_integral &&
-        fTriggerPrimitive[i].adc_peak == fTriggerPrimitiveDAQ[j].adc_peak &&
-        fTriggerPrimitive[i].detid == fTriggerPrimitiveDAQ[j].detid &&
-        fTriggerPrimitive[i].type == fTriggerPrimitiveDAQ[j].type &&
-        fTriggerPrimitive[i].algorithm == fTriggerPrimitiveDAQ[j].algorithm) {
-      foundMatch = true;
-      break; // Break the loop if a match is found
+	  fTriggerPrimitive[i].time_start == fTriggerPrimitiveDAQ[j].time_start && //== 172096 &&
+	  fTriggerPrimitive[i].time_over_threshold == fTriggerPrimitiveDAQ[j].time_over_threshold &&
+	  fTriggerPrimitive[i].time_peak == fTriggerPrimitiveDAQ[j].time_peak && // == 172096 &&
+	  fTriggerPrimitive[i].adc_integral == fTriggerPrimitiveDAQ[j].adc_integral &&
+	  fTriggerPrimitive[i].adc_peak == fTriggerPrimitiveDAQ[j].adc_peak &&
+	  fTriggerPrimitive[i].detid == fTriggerPrimitiveDAQ[j].detid &&
+	  fTriggerPrimitive[i].type == fTriggerPrimitiveDAQ[j].type &&
+	  fTriggerPrimitive[i].algorithm == fTriggerPrimitiveDAQ[j].algorithm) {
+	foundMatch = true;
+	break; // Break the loop if a match is found
       }
     }
-
     fTPComparison[i] = foundMatch; // Set comparison result
-  } 
+  }
 
   // Compare offline and online TAs
   fTASizeOffline = fTriggerActivity.size();
   fTASizeOnline = fTriggerActivityDAQ.size();
   long unsigned int minTASize = std::min(fTASizeOffline, fTASizeOnline);
-  fTAComparison.resize(minTASize);
+  fTAComparison.resize(minTPSize);
   for (long unsigned int i = 0; i < minTASize; i++) {
-    bool foundMatch = false; // to check if a match is found
+    bool foundMatch = false; //  to check if a match is found
     for(long unsigned int j = 0; j < fTriggerActivityDAQ.size(); j++) {
       // Compare TAs and set comparison result
       if (fTriggerActivity[i].channel_start == fTriggerActivityDAQ[j].channel_start &&
@@ -247,9 +245,9 @@ void duneana::TriggerTPCInfoComparator::analyze(art::Event const& e)
   fTCSizeOffline = fTriggerCandidate.size();
   fTCSizeOnline = fTriggerCandidateDAQ.size();
   long unsigned int minTCSize = std::min(fTCSizeOffline, fTCSizeOnline);
-  fTCComparison.resize(minTCSize);
+  fTCComparison.resize(minTPSize);
   for (long unsigned int i = 0; i < minTCSize; i++) {
-    bool foundMatch = false; // to check if a match is found
+    bool foundMatch = false; //  to check if a match is found
     for (long unsigned int j = 0; j < fTriggerCandidateDAQ.size(); j++) {
       // Compare TCs and set comparison result
       if (fTriggerCandidate[i].time_start == fTriggerCandidateDAQ[j].time_start &&
@@ -283,13 +281,25 @@ void duneana::TriggerTPCInfoComparator::beginJob()
   fTCComparisonTree = tfs->make<TTree>("TCComparisonTree", "Offline vs Online TC Comparison");
 
   // Set branch addresses for comparison TTrees
+  fTPComparisonTree->Branch("Event" , &fEventID, "Event/I");
+  fTPComparisonTree->Branch("Run"   , &fRun    , "Run/I");
+  fTPComparisonTree->Branch("SubRun", &fSubRun , "SubRun/I");
+
   fTPComparisonTree->Branch("SizeOffline", &fTPSizeOffline, "SizeOffline/I");
   fTPComparisonTree->Branch("SizeOnline", &fTPSizeOnline, "SizeOnline/I");
   fTPComparisonTree->Branch("Comparison", &fTPComparison);
 
+  fTAComparisonTree->Branch("Event" , &fEventID, "Event/I");
+  fTAComparisonTree->Branch("Run"   , &fRun    , "Run/I");
+  fTAComparisonTree->Branch("SubRun", &fSubRun , "SubRun/I");
+
   fTAComparisonTree->Branch("SizeOffline", &fTASizeOffline, "SizeOffline/I");
   fTAComparisonTree->Branch("SizeOnline", &fTASizeOnline, "SizeOnline/I");
   fTAComparisonTree->Branch("Comparison", &fTAComparison);
+
+  fTCComparisonTree->Branch("Event" , &fEventID, "Event/I");
+  fTCComparisonTree->Branch("Run"   , &fRun    , "Run/I");
+  fTCComparisonTree->Branch("SubRun", &fSubRun , "SubRun/I");
 
   fTCComparisonTree->Branch("SizeOffline", &fTCSizeOffline, "SizeOffline/I");
   fTCComparisonTree->Branch("SizeOnline", &fTCSizeOnline, "SizeOnline/I");

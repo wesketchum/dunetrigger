@@ -35,10 +35,10 @@ physics:
          rawdigit_tag: "tpcrawdecoder:daq"
          tpalg: {
              tool_type: TPAlgTPCSimpleThreshold
-             threshold_tpg_plane0: 50
-             threshold_tpg_plane1: 50
-             threshold_tpg_plane2: 50
-             verbosity: 0
+             threshold_tpg_plane0: -1
+             threshold_tpg_plane1: -1
+             threshold_tpg_plane2: 60
+             verbosity: 1
          }
          verbosity: 1
      }
@@ -49,9 +49,9 @@ physics:
          tp_tag: "tpmakerTPC"
          taalg: {
 	     tool_type: TAAlgTPCADCSimpleWindow 
-	     adc_threshold: 100000
-	     window_length: 10000
-	     verbosity: 0
+	     adc_threshold: 20000000
+	     window_length: 60000
+	     verbosity: 1
          }
          verbosity: 1
      }

@@ -98,7 +98,7 @@ void duneana::TriggerPrimitiveMakerTPC::produce(art::Event& e)
     std::cout << "Found " << rawdigit_vec.size() << " raw::RawDigits" << std::endl;
 
   uint64_t this_timestamp = default_timestamp_;
-  for(size_t i_digit=0; i_digit<rawdigit_vec.size(); ++i_digit) {
+  for(size_t i_digit=0; i_digit<rawdigit_vec.size(); ++i_digit) {// rawdigit_vec.size()
     auto const& digit = rawdigit_vec[i_digit];
 
     if(rd_assn_is_valid) {
