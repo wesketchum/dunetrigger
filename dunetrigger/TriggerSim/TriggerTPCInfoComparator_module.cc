@@ -198,9 +198,9 @@ void duneana::TriggerTPCInfoComparator::analyze(art::Event const& e)
     for (long unsigned int j = 0; j < fTriggerPrimitiveDAQ.size(); j++) {
       // Compare TPs and set comparison result
       if (fTriggerPrimitive[i].channel == fTriggerPrimitiveDAQ[j].channel &&
-	  fTriggerPrimitive[i].time_start == fTriggerPrimitiveDAQ[j].time_start && //== 172096 &&
+	  fTriggerPrimitive[i].time_start == fTriggerPrimitiveDAQ[j].time_start &&
 	  fTriggerPrimitive[i].time_over_threshold == fTriggerPrimitiveDAQ[j].time_over_threshold &&
-	  fTriggerPrimitive[i].time_peak == fTriggerPrimitiveDAQ[j].time_peak && // == 172096 &&
+	  fTriggerPrimitive[i].time_peak == fTriggerPrimitiveDAQ[j].time_peak &&
 	  fTriggerPrimitive[i].adc_integral == fTriggerPrimitiveDAQ[j].adc_integral &&
 	  fTriggerPrimitive[i].adc_peak == fTriggerPrimitiveDAQ[j].adc_peak &&
 	  fTriggerPrimitive[i].detid == fTriggerPrimitiveDAQ[j].detid &&
@@ -217,7 +217,7 @@ void duneana::TriggerTPCInfoComparator::analyze(art::Event const& e)
   fTASizeOffline = fTriggerActivity.size();
   fTASizeOnline = fTriggerActivityDAQ.size();
   long unsigned int minTASize = std::min(fTASizeOffline, fTASizeOnline);
-  fTAComparison.resize(minTPSize);
+  fTAComparison.resize(minTASize);
   for (long unsigned int i = 0; i < minTASize; i++) {
     bool foundMatch = false; //  to check if a match is found
     for(long unsigned int j = 0; j < fTriggerActivityDAQ.size(); j++) {
@@ -245,7 +245,7 @@ void duneana::TriggerTPCInfoComparator::analyze(art::Event const& e)
   fTCSizeOffline = fTriggerCandidate.size();
   fTCSizeOnline = fTriggerCandidateDAQ.size();
   long unsigned int minTCSize = std::min(fTCSizeOffline, fTCSizeOnline);
-  fTCComparison.resize(minTPSize);
+  fTCComparison.resize(minTCSize);
   for (long unsigned int i = 0; i < minTCSize; i++) {
     bool foundMatch = false; //  to check if a match is found
     for (long unsigned int j = 0; j < fTriggerCandidateDAQ.size(); j++) {

@@ -100,8 +100,6 @@ namespace duneana {
         //for this channel, reinitialize the channel state variables
         initialize_channel_state(channel, adcs);
 
-	// std::cout<<" channel "<<channel<<" adcs.size() "<<adcs.size()<<" pedestal_ "<<pedestal_<<" start_time "<<start_time<<"\n";
-
         for(size_t i_t=0; i_t<adcs.size(); ++i_t){
 
 	  //if threshold < 0, the plane is not used to produce TPs

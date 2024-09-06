@@ -142,7 +142,7 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
 
     //create an output vector and initialize our taalg
     std::vector< TAAlgTPCTool::TriggerActivity> tas_out;
-    // taalg_->initialize();
+    taalg_->initialize();
 
     //loop through the TPs and process
     for( auto const& tp : tps.second)
