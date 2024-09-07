@@ -30,6 +30,8 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "dunetrigger/TriggerSim/Verbosity.hh"
+
 #include <memory>
 #include <algorithm>
 #include <iostream>
@@ -106,7 +108,7 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
   auto tp_handle = e.getValidHandle< std::vector<dunedaq::trgdataformats::TriggerPrimitive> >(tp_tag_);
   auto tp_vec = *tp_handle;
 
-  if(verbosity_>0)
+  if(verbosity_ >= Verbosity::kInfo)
     std::cout << "Found " << tp_vec.size() << " TPs" << std::endl;
 
   //need to sort TPs per plane per detector module (APA, CRP...)
@@ -145,7 +147,7 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
   for (auto & tps : tps_per_rop_map) {
     std::sort(tps.second.begin(),tps.second.end(),compareTriggerPrimitive);
 
-    if(verbosity_>0){
+    if(verbosity_ >= Verbosity::kInfo){
       std::cout << "\t Detector module number: " << tps.first << std::endl;
       std::cout << "\t\t " << tps.second.size() << " TPs between [" 
 		<< tps.second.front()->time_start << ", " << tps.second.back()->time_start

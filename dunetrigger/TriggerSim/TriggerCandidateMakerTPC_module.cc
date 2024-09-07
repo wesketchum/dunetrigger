@@ -27,6 +27,8 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "dunetrigger/TriggerSim/Verbosity.hh"
+
 #include <memory>
 #include <algorithm>
 #include <iostream>
@@ -95,14 +97,14 @@ void duneana::TriggerCandidateMakerTPC::produce(art::Event& e)
   auto ta_handle = e.getValidHandle< std::vector<dunedaq::trgdataformats::TriggerActivityData> >(ta_tag_);  
   auto ta_vec = *ta_handle;
 
-  if(verbosity_>0)
+  if(verbosity_ >= Verbosity::kInfo)
     std::cout << "Found " << ta_vec.size() << " TAs" << std::endl;
 
   //we need to sort the tas by time
   //and then, can run the TC algorithm.
   std::sort(ta_vec.begin(),ta_vec.end(),compareTriggerActivity);
 
-  if(verbosity_>0){
+  if(verbosity_ >= Verbosity::kInfo){
     std::cout << "\t " << ta_vec.size() << " TAs between [" 
               << ta_vec.front().time_start << ", " << ta_vec.back().time_end
               << "]" << std::endl;

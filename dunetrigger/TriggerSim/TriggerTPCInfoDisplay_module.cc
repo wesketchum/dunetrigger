@@ -44,6 +44,7 @@
 // Additional framework includes
 #include "art_root_io/TFileDirectory.h"
 #include "art_root_io/TFileService.h"
+#include "dunetrigger/TriggerSim/Verbosity.hh"
 
 // ROOT includes
 #include <TH1I.h>
@@ -207,7 +208,7 @@ void duneana::TriggerTPCInfoDisplay::analyze(art::Event const& e)
   // Load the geometry service
   art::ServiceHandle<geo::Geometry> geom;
 
-  if(verbosity_>0)
+  if(verbosity_ >= Verbosity::kInfo)
   {
     //std::cout << "Found " << rawdigit_vec.size() << " raw::RawDigits" << std::endl;
     std::cout << "Found " << fTriggerPrimitive.size() << " TPs" << std::endl;

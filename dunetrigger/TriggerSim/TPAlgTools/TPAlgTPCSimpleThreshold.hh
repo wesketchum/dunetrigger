@@ -8,6 +8,7 @@
 #include "larcore/Geometry/Geometry.h"
 
 #include "dunetrigger/TriggerSim/TPAlgTools/TPAlgTPCTool.hh"
+#include "dunetrigger/TriggerSim/Verbosity.hh"
 
 #include <map>
 #include <limits>
@@ -21,9 +22,9 @@ namespace duneana {
     explicit TPAlgTPCSimpleThreshold(fhicl::ParameterSet const& ps) :
       verbosity_(ps.get<int>("verbosity",0)),
       accum_limit_(ps.get<int>("accum_limit",10)),
-      threshold_tpg_plane0_(ps.get<int>("threshold_tpg_plane0")),
-      threshold_tpg_plane1_(ps.get<int>("threshold_tpg_plane1")),
-      threshold_tpg_plane2_(ps.get<int>("threshold_tpg_plane2"))
+      threshold_tpg_plane0_(ps.get<int16_t>("threshold_tpg_plane0")),
+      threshold_tpg_plane1_(ps.get<int16_t>("threshold_tpg_plane1")),
+      threshold_tpg_plane2_(ps.get<int16_t>("threshold_tpg_plane2"))
     {}
 
     void initialize_channel_state(dunedaq::trgdataformats::channel_t const& channel,
@@ -38,7 +39,7 @@ namespace duneana {
         else if(plane==1) threshold_=threshold_tpg_plane1_;
         else if(plane==2) threshold_=threshold_tpg_plane2_;
 
-        if(verbosity_>1) {
+        if(verbosity_ >= Verbosity::kInfo) {
             std::cout << "Channel: " << channel
                       << ", ROP: " << plane
                       << ", Threshold: " << threshold_
@@ -165,10 +166,9 @@ namespace duneana {
     //configuration parameters
     const int verbosity_;
     const int accum_limit_;
-    const int threshold_tpg_plane0_;
-    const int threshold_tpg_plane1_;
-    const int threshold_tpg_plane2_;
-
+    const int16_t threshold_tpg_plane0_;
+    const int16_t threshold_tpg_plane1_;
+    const int16_t threshold_tpg_plane2_;
 
     //variables for tracking state / hit-finding
     int16_t threshold_;
