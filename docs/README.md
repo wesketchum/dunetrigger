@@ -23,7 +23,7 @@ It is worth noting that the username must be adapted to the user running the scr
 # It creates a working directory, sets up the required software packages, and clones the necessary repositories.
 # Finally, it builds and installs the software.
 
-VERSION=v09_89_01d01  # Main version of the software to be used
+VERSION=v09_91_04d00  # Main version of the software to be used
 QUALS=e26:prof  # Qualifiers for the software packages
 DIRECTORY=trigger_sim_dev  # Name of the directory where the software will be installed
 export WORKDIR=/exp/dune/app/users/$USER/  # Path to the working directory
@@ -50,17 +50,8 @@ source ${WORKDIR}/${DIRECTORY}/localProducts*/setup
 mrb g https://github.com/wesketchum/dunetrigger.git@develop
 
 # Clone the duneprototypes repository
-mrb g https://github.com/wesketchum/duneprototypes.git
-
-cd ${MRB_SOURCE}/duneprototypes/
-git checkout feature/wketchum_TriggerDecodingUpdates
-
-# Clone the dunecore repository
-mrb g https://github.com/wesketchum/dunecore.git
-
-cd ${MRB_SOURCE}/dunecore/
-git checkout feature/wketchum_TriggerDecodingUpdates
-mrb uv dunecore ${VERSION} #Force MRB to use that version of dunecore to avoid package conflicts
+# Temporary until the RDTimestamp fix is merged into develop
+mrb g https://github.com/wesketchum/duneprototypes.git@feature/wketchum_FixRawDigitRDTimestamps
 
 cd ${MRB_BUILDDIR}
 
@@ -91,7 +82,7 @@ Once the development area was created, the environment can be set up by running 
 ```bash
 # This script sets up the environment for the DUNE software and runs the necessary commands to source the local products after creating the development area.
 
-VERSION=v09_89_01d01  # Version of the software to be used
+VERSION=v09_91_04d00  # Version of the software to be used
 QUALS=e26:prof  # Qualifiers for the software packages
 
 # Source the setup script for the DUNE software
