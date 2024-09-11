@@ -16,7 +16,7 @@ To sum up, the following command can be used to run the apptainer container:
 
 The bash snippet below creates and sets up the development environment for the LArSoft trigger emulation software used in the DUNE experiment. To do so, one just needs to copy the code into an executable bash script and run it.
 
-It is worth noting that the username must be adapted to the user running the script. Regarding the software version, it is set to `v09_89_01d01`, but it can be changed to any other future version available in the DUNE software environment. The same applies to the qualifiers, which are set to `e26:prof` in this case.
+It is worth noting that the username must be adapted to the user running the script. Regarding the software version, it is set to `v09_91_04d00`, but it can be changed to any other future version available in the DUNE software environment. The same applies to the qualifiers, which are set to `e26:prof` in this case.
 
 ```bash
 # This script sets up the development environment for the LArSoft trigger emulation software used in the DUNE experiment.
