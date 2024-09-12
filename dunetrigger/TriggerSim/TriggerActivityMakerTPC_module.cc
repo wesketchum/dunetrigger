@@ -144,13 +144,8 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
   for (auto & tps : tps_per_rop_map) {
     std::sort(tps.second.begin(),tps.second.end(),compareTriggerPrimitive);
 
-<<<<<<< HEAD
     if(verbosity_  >= Verbosity::kInfo){
       std::cout << "\t Tmp plane number: " << tps.first << std::endl;
-=======
-    if(verbosity_ >= Verbosity::kInfo){
-      std::cout << "\t Detector module number: " << tps.first << std::endl;
->>>>>>> 5e10977f94de871324e062cb3810bf72dd993817
       std::cout << "\t\t " << tps.second.size() << " TPs between [" 
 		<< tps.second.front()->time_start << ", " << tps.second.back()->time_start
 		<< "]" << std::endl;
