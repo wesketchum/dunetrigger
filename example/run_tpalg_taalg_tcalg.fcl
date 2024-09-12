@@ -53,6 +53,8 @@ physics:
 	     window_length: 60000
 	     verbosity: 1
          }
+         nmodules: 4
+         mergecollwires: false
          verbosity: 1
      }
 
