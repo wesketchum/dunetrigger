@@ -1,5 +1,7 @@
 # basic source code CMakeLists.txt
 
+add_subdirectory(channelmaps)
+add_subdirectory(triggeralgs)
 add_subdirectory(TriggerSim)
 
 install_headers()
