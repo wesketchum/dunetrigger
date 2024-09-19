@@ -38,7 +38,7 @@ physics:
              threshold_tpg_plane0: -1
              threshold_tpg_plane1: -1
              threshold_tpg_plane2: 60
-             verbosity: 1
+             verbosity: 0
          }
          verbosity: 1
      }
@@ -51,10 +51,10 @@ physics:
 	     tool_type: TAAlgTPCADCSimpleWindow 
 	     adc_threshold: 20000000
 	     window_length: 60000
-	     verbosity: 1
+	     verbosity: 2
          }
          nmodules: 4
-         mergecollwires: false
+         mergecollwires: true
          verbosity: 1
      }
 

@@ -7,6 +7,8 @@
 #include "dunetrigger/TriggerSim/TAAlgTools/TAAlgTPCTool.hh"
 #include "dunetrigger/TriggerSim/TAAlgTools/TPWindow.hh"
 
+#include "dunetrigger/TriggerSim/Verbosity.hh"
+
 namespace duneana {
 
   class TAAlgTPCADCSimpleWindow : public TAAlgTPCTool {
@@ -52,7 +54,13 @@ namespace duneana {
       
       return ta;
     }
-    
+
+    void initialize() override
+    {
+      ta_current_ = TriggerActivity();
+      current_window_ = TPWindow();
+    }
+
     //process TPs one-by-one
     //if adc integral is greater than the specified threshold for a given TP window, construct a TA, and add it to the output TAs vector
     void process_tp(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp,
@@ -66,7 +74,7 @@ namespace duneana {
 	current_window_.reset(input_tp);
 	ta_current_.second.push_back(tp);
 
-	if (verbosity_ > 1) std::cout << " TP start Time: " << input_tp.time_start << ", TP ADC Sum: " << input_tp.adc_integral
+	if (verbosity_ >= Verbosity::kInfo) std::cout << " TP start Time: " << input_tp.time_start << ", TP ADC Sum: " << input_tp.adc_integral
 				      << ", TP TOT: " << input_tp.time_over_threshold << ", TP ADC Peak: " << input_tp.adc_peak
 				      << ", TP Offline Channel ID: " << input_tp.channel << "\n";
 	return;
@@ -86,9 +94,9 @@ namespace duneana {
 	ta_current_.first = construct_ta();
 	
 	tas_out.push_back(ta_current_);
-	ta_current_.second.clear();
-	ta_current_.second.push_back(tp);
-	
+	initialize();
+
+	ta_current_.second.push_back(tp);	
 	current_window_.reset(input_tp);
       }
       // If false, move the window along

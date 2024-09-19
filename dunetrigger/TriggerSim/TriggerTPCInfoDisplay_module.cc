@@ -238,18 +238,19 @@ void duneana::TriggerTPCInfoDisplay::analyze(art::Event const& e)
   }
 
   // Fill TPinTA tree
+  int ta_channel_start = 0;
   uint32_t ta_adc_int = 0;
-  timestamp_t ta_start_time = 0;
   int ta_count = 0;
   for(long unsigned int i=0; i < fTPfromTPTA.size(); i++)
   {
-    if (fTAfromTPTA[i].first->adc_integral != ta_adc_int && fTAfromTPTA[i].first->time_start != ta_start_time) {
+    if (fTAfromTPTA[i].first->channel_start != ta_channel_start || fTAfromTPTA[i].first->adc_integral != ta_adc_int) {
+      ta_channel_start = fTAfromTPTA[i].first->channel_start;
       ta_adc_int = fTAfromTPTA[i].first->adc_integral;
-      ta_start_time = fTAfromTPTA[i].first->time_start;
       ta_count++;
-      std::cout<<"For TA number "<<ta_count<<", the adc_integral and start_time are "<<ta_adc_int<<" and "<<ta_start_time<<"\n";
+      if(verbosity_ >= Verbosity::kInfo)
+	std::cout<<"For TA number "<<ta_count<<", the channel_start, start_time and adc_integral are  "<<ta_channel_start<<", "<<fTAfromTPTA[i].first->time_start<<" and "<<ta_adc_int<<"\n";
     }
-
+    
     fTAnumber = ta_count;
     fChannelID_TPinTA = fTPfromTPTA[i].first->channel;
     fStart_time_TPinTA = fTPfromTPTA[i].first->time_start;
