@@ -61,6 +61,8 @@ private:
   // Declare member data here.
   art::InputTag tp_tag_;
   std::unique_ptr<TAAlgTPCTool> taalg_;
+  int n_modules_;
+  bool mergecollwires_;
   int verbosity_;
 
   static bool compareTriggerPrimitive(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp1,
@@ -72,6 +74,8 @@ duneana::TriggerActivityMakerTPC::TriggerActivityMakerTPC(fhicl::ParameterSet co
   : EDProducer{p}  // ,
   , tp_tag_(p.get<art::InputTag>("tp_tag"))
   , taalg_{art::make_tool<TAAlgTPCTool>(p.get<fhicl::ParameterSet>("taalg"))}
+  , n_modules_(p.get<int>("nmodules"))
+  , mergecollwires_(p.get<bool>("mergecollwires", false))
   , verbosity_(p.get<int>("verbosity",0))
 {
   // Call appropriate produces<>() functions here.
@@ -111,12 +115,28 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
   if(verbosity_ >= Verbosity::kInfo)
     std::cout << "Found " << tp_vec.size() << " TPs" << std::endl;
 
-  //need to sort TPs by ROP (APA, CRP...)
+  //need to sort TPs per plane per detector module (APA, CRP...)
   //note: use art::PtrVector here since we are going to need to store the assn between TA and TPs
-  std::map< readout::ROPID,art::PtrVector<dunedaq::trgdataformats::TriggerPrimitive> > tps_per_rop_map;
+  std::map< int, art::PtrVector<dunedaq::trgdataformats::TriggerPrimitive> > tps_per_rop_map;
   for( size_t i_tp=0; i_tp < tp_vec.size(); ++i_tp) {
+
+    //TPs in the colleciton plane arrive in two sets (due to collection wires facing in two different directions)
+    //merge them if mergecollwires_ is true
     auto rop = geom->ChannelToROP(tp_vec[i_tp].channel);
-    tps_per_rop_map[rop].push_back( art::Ptr<dunedaq::trgdataformats::TriggerPrimitive>(tp_handle,i_tp) );
+
+    int tmp_plane = 0;
+    for (short unsigned int i = 0; i < n_modules_; i ++) {
+      for (short unsigned int j = 0; j < 4; j ++) {
+	
+	readout::ROPID tmp_rop = {0, i, j};
+	if (j < 2 && rop == tmp_rop) tmp_plane = j*n_modules_ + i;
+	else if (j >= 2 && rop == tmp_rop) {
+	  if (mergecollwires_) tmp_plane = 2*n_modules_ + i;
+	  else tmp_plane = j*n_modules_ + i;
+	}
+      }
+    }
+    tps_per_rop_map[tmp_plane].push_back( art::Ptr<dunedaq::trgdataformats::TriggerPrimitive>(tp_handle,i_tp) );
   }
 
   //now, per map, we need to sort the tps by time
@@ -124,8 +144,8 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
   for (auto & tps : tps_per_rop_map) {
     std::sort(tps.second.begin(),tps.second.end(),compareTriggerPrimitive);
 
-    if(verbosity_ >= Verbosity::kInfo){
-      std::cout << "\t ROP: " << tps.first << std::endl;
+    if(verbosity_  >= Verbosity::kInfo){
+      std::cout << "\t Tmp plane number: " << tps.first << std::endl;
       std::cout << "\t\t " << tps.second.size() << " TPs between [" 
 		<< tps.second.front()->time_start << ", " << tps.second.back()->time_start
 		<< "]" << std::endl;

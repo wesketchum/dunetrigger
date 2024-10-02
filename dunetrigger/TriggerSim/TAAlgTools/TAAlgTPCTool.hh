@@ -20,6 +20,7 @@ namespace duneana {
     virtual ~TAAlgTPCTool() noexcept = default; 
 
     virtual void initialize() {};
+    dunedaq::trgdataformats::TriggerActivityData construct_ta() const;
     virtual void process_tp(art::Ptr<dunedaq::trgdataformats::TriggerPrimitive> tp,
 			                std::vector<TriggerActivity> & tas_out) = 0;
   };
