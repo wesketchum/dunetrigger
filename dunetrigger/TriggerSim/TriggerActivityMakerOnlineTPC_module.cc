@@ -38,7 +38,20 @@
 #include <utility>
 
 namespace duneana {
-class TriggerActivityMakerOnlineTPC;
+  class TriggerActivityMakerOnlineTPC;
+  typedef std::pair<readout::TPCsetID, geo::View_t> TAMakerScopeID_t;
+
+  std::ostream& operator<<(std::ostream& os, const duneana::TAMakerScopeID_t &scope){
+    return (os << scope.first << " P:" << scope.second);
+  }
+
+  static TAMakerScopeID_t getTAScopeID(readout::ROPID &ropid, geo::Geometry &geom) {
+    TAMakerScopeID_t result = {
+      ropid.asConstTPCsetID(), // APA is a TPCSet
+      geom.View(ropid)
+    };
+    return result;
+  }
 }
 
 class duneana::TriggerActivityMakerOnlineTPC : public art::EDProducer {
@@ -86,11 +99,15 @@ private:
   //std::unique_ptr<triggeralgs::TriggerActivityMaker> alg;
 
 
-  std::map<readout::ROPID, std::shared_ptr<triggeralgs::TriggerActivityMaker>> maker_per_plane;
+  std::map<TAMakerScopeID_t, std::shared_ptr<triggeralgs::TriggerActivityMaker>> maker_per_plane;
   // small function to compare tps by time
   static bool compareTriggerPrimitive(const TriggerPrimitiveIdx &tp1,
                                       const TriggerPrimitiveIdx &tp2) {
-    return (tp1.second.time_start < tp2.second.time_start);
+    // TP is ordered by time_start, and ties are broken by channel ID.
+    // if (tp1.second.time_start < tp2.second.time_start) return true;
+    // if (tp1.second.time_start == tp2.second.time_start) return tp1.second.channel < tp2.second.channel;
+    // return false;
+    return std::tie(tp1.second.time_start, tp1.second.channel) < std::tie(tp2.second.time_start, tp2.second.channel);
   }
 
   // little function to check equality of TPs
@@ -172,23 +189,40 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
   // in essence what we want to do here, is group the TPs by ROP and then sort
   // by time, but we need to keep the index in the original TP vector (and can't
   // make an art::ptr now so we lose that if we hand it off to the online algo)
-  std::map<readout::ROPID, std::vector<TriggerPrimitiveIdx>> tp_by_rop;
+  std::map<TAMakerScopeID_t, std::vector<TriggerPrimitiveIdx>> tp_by_plane;
   for (size_t i = 0; i < tp_vec.size(); ++i) {
     readout::ROPID rop = geom->ChannelToROP(tp_vec.at(i).channel);
-    tp_by_rop[rop].push_back(
-        std::make_pair(i, tp_vec.at(i)));
+    TAMakerScopeID_t scope = getTAScopeID(rop, *geom);
+    tp_by_plane[scope].push_back(std::make_pair(i, tp_vec.at(i)));
   }
 
   // now we process each ROP
-  for (auto &tps : tp_by_rop) {
+  for (auto &tps : tp_by_plane) {
     if(maker_per_plane.count(tps.first) == 0){
       if(verbosity >= TriggerSim::Verbosity::kInfo){
         std::cout << "Creating Maker on Plane " << tps.first << std::endl;
       }
       maker_per_plane[tps.first] = tf->build_maker(algname);
+      unsigned int plane = tps.first.second;
+      // configure the algorithm accordingly
+      // we might want to access the algconfig separately later
+      nlohmann::json this_algconfig;
+      switch(plane){
+        case 0:
+          this_algconfig = get_alg_config(algconfig_apa0);
+          break;
+        case 1:
+          this_algconfig = get_alg_config(algconfig_apa1);
+          break;
+        case 2:
+          this_algconfig = get_alg_config(algconfig_apa2);
+          break;
+        default:
+          this_algconfig = get_alg_config(algconfig_apa0);
+          break;
+      }
+      maker_per_plane[tps.first] -> configure(this_algconfig);
     }
-    // make the algorithm here so that we reset the internal state for each ROP
-    // - since I believe those are independent for the TAMaker 
     std::shared_ptr<triggeralgs::TriggerActivityMaker> alg = maker_per_plane[tps.first];
 
     // throw an error if an invalid algorithm name is passed
@@ -196,37 +230,26 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
       throw "Invalid Algorithm!";
     }
 
-    // get the APA from the ROP we are on
-    auto plane = geom->ROPtoWirePlanes(tps.first).at(0).Plane;
-    // configure the algorithm accordingly
-    // we might want to access the algconfig separately later
-    nlohmann::json this_algconfig;
-    switch(plane){
-      case 0:
-        this_algconfig = get_alg_config(algconfig_apa0);
-        break;
-      case 1:
-        this_algconfig = get_alg_config(algconfig_apa1);
-        break;
-      case 2:
-        this_algconfig = get_alg_config(algconfig_apa2);
-        break;
-      default:
-        this_algconfig = get_alg_config(algconfig_apa0);
-        break;
-    }
-    alg->configure(this_algconfig);
-
     // first we need to sort the TPs by time
     std::sort(tps.second.begin(), tps.second.end(), compareTriggerPrimitive);
 
     // create a vector for the created TAs in the online format
     std::vector<triggeralgs::TriggerActivity> created_tas = {};
-
     // and now loop through the TPs and create TAs
     for (auto &tp : tps.second) {
+      // HACK: hard-coded max time over time_over_threshold
+      if (tp.second.time_over_threshold > 10000) continue;
       // check that the tp is not in the channel mask
       if(std::find(channel_mask.begin(), channel_mask.end(), tp.second.channel) == channel_mask.end()){
+        if (verbosity >= TriggerSim::Verbosity::kVerbose)
+          std::cout << "\tAdded TP:" 
+            << " time_start: " << tp.second.time_start 
+            << " time_end: " << tp.second.time_start + tp.second.time_over_threshold
+            << " channel: " << tp.second.channel 
+            << " adc_integral " << tp.second.adc_integral 
+            << " Plane: " << tps.first
+            << std::endl;
+          
         (*alg)(tp.second, created_tas);
       }
       else if(verbosity >= TriggerSim::Verbosity::kDebug){
@@ -235,7 +258,10 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
     }
 
     if (verbosity >= TriggerSim::Verbosity::kInfo && created_tas.size() > 0) {
-        std::cout << "Created " << created_tas.size() << " TAs on ROP " << tps.first << std::endl;
+      std::cout << "Created " << created_tas.size() << " TAs on ROP " << tps.first << std::endl;
+      for (auto ta: created_tas) {
+        std::cout << "\t" << ta.time_start << " " << ta.channel_start << " " << ta.adc_integral << std::endl;
+      }
     }
 
     // now the fun part
