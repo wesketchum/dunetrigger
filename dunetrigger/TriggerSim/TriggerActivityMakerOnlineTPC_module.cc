@@ -82,6 +82,7 @@ private:
   std::vector<raw::ChannelID_t> channel_mask;
 
   int verbosity;
+  bool flush;
 
   // defining this here so it isn't ugly to write every time
   // need it to store the index of the triggerprimitive to later make an
@@ -138,7 +139,8 @@ duneana::TriggerActivityMakerOnlineTPC::TriggerActivityMakerOnlineTPC(
       algconfig_apa2(p.get<fhicl::ParameterSet>("algconfig_apa2")),
       tp_tag(p.get<art::InputTag>("tp_tag")),
       channel_mask(p.get<std::vector<raw::ChannelID_t>>("channel_mask", std::vector<raw::ChannelID_t>{})),
-      verbosity(p.get<int>("verbosity", 1))
+      verbosity(p.get<int>("verbosity", 1)),
+      flush(p.get<bool>("flush", false))
 // ,
 // More initializers here.
 {
@@ -237,8 +239,6 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
     std::vector<triggeralgs::TriggerActivity> created_tas = {};
     // and now loop through the TPs and create TAs
     for (auto &tp : tps.second) {
-      // HACK: hard-coded max time over time_over_threshold
-      if (tp.second.time_over_threshold > 10000) continue;
       // check that the tp is not in the channel mask
       if(std::find(channel_mask.begin(), channel_mask.end(), tp.second.channel) == channel_mask.end()){
         if (verbosity >= TriggerSim::Verbosity::kVerbose)
@@ -255,6 +255,14 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
       else if(verbosity >= TriggerSim::Verbosity::kDebug){
           std::cout << "Ignoring Masked TP on channel: " << tp.second.channel << std::endl;
       }
+    }
+    // TPs in window will only be evaluated one an out-of-window TA is seen by the TAMaker.
+    // This would result in the last TA in the event being missing, and TAs being written
+    // to the wrong event. Avoid this by adding a dummy tp with infinite time to force a 
+    // window evaluation.
+    if (flush){
+      TriggerPrimitive dummy_tp;
+      (*alg)(dummy_tp, created_tas);
     }
 
     if (verbosity >= TriggerSim::Verbosity::kInfo && created_tas.size() > 0) {
