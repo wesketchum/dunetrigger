@@ -138,7 +138,8 @@ void duneana::TriggerCandidateMakerOnlineTPC::produce(art::Event &e) {
   // std::sort(ta_vec.begin(), ta_vec.end(), compareTriggerActivity);
 
   // create a vector of inputs with the 'file' index of the TA
-  std::vector<TriggerActivityIdx> input_tas(ta_vec.size());
+  std::vector<TriggerActivityIdx> input_tas;
+  input_tas.reserve(ta_vec.size());
   for (size_t i = 0; i < ta_vec.size(); ++i) {
     input_tas.push_back(TriggerActivityIdx(i, ta_vec.at(i)));
   }
