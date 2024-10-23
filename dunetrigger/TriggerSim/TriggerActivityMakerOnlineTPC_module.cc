@@ -38,7 +38,7 @@
 #include <utility>
 
 namespace duneana {
-  class TriggerActivityMakerOnlineTPC;
+class TriggerActivityMakerOnlineTPC;
 }
 
 class duneana::TriggerActivityMakerOnlineTPC : public art::EDProducer {
@@ -61,32 +61,35 @@ public:
 private:
   // fields for job configuration
   std::string algname;
-  fhicl::ParameterSet algconfig_apa0;
-  fhicl::ParameterSet algconfig_apa1;
-  fhicl::ParameterSet algconfig_apa2;
+  fhicl::ParameterSet algconfig_plane0;
+  fhicl::ParameterSet algconfig_plane1;
+  fhicl::ParameterSet algconfig_plane2;
+  fhicl::ParameterSet algconfig_plane3;
   art::InputTag tp_tag;
 
   std::vector<raw::ChannelID_t> channel_mask;
+
+  int n_modules_;
+  bool mergecollwires_;
 
   int verbosity;
 
   // defining this here so it isn't ugly to write every time
   // need it to store the index of the triggerprimitive to later make an
   // art::Assn
-  typedef std::pair<size_t, dunedaq::trgdataformats::TriggerPrimitive>
-  TriggerPrimitiveIdx;
+  typedef std::pair<size_t, dunedaq::trgdataformats::TriggerPrimitive> TriggerPrimitiveIdx;
 
   // by making the factory a class field it's theoretically possible to make a
   // new algorithm at any point
   // since we were discussing different algorithms for different planes, I think
   // this makes that relatively easy
   std::shared_ptr<triggeralgs::AbstractFactory<triggeralgs::TriggerActivityMaker>> tf
-  = triggeralgs::TriggerActivityFactory::get_instance();
+      = triggeralgs::TriggerActivityFactory::get_instance();
   // this part however, needs to be changed around if we do that
   //std::unique_ptr<triggeralgs::TriggerActivityMaker> alg;
 
 
-  std::map<readout::ROPID, std::shared_ptr<triggeralgs::TriggerActivityMaker>> maker_per_plane;
+  std::map< readout::ROPID, std::shared_ptr<triggeralgs::TriggerActivityMaker> > maker_per_plane;
   // small function to compare tps by time
   static bool compareTriggerPrimitive(const TriggerPrimitiveIdx &tp1,
                                       const TriggerPrimitiveIdx &tp2) {
@@ -107,32 +110,44 @@ private:
   static nlohmann::json get_alg_config(fhicl::ParameterSet& pset_config){
     nlohmann::json algconfig;
     for(auto k : pset_config.get_all_keys()){
-      algconfig[k] = pset_config.get<uint32_t>(k);
+      try {
+	algconfig[k] = pset_config.get<uint64_t>(k);
+      }
+      catch (const fhicl::exception& e) {
+	try {
+	  // If false, try retrieving the parameter as a boolean
+	  algconfig[k] = pset_config.get<bool>(k);
+	}
+	catch (const fhicl::exception& e) {
+	  std::cerr << "Error: FHiCL parameter is neither an int nor a bool in the FHiCL file. \n";
+	}
+      }
     }
     return algconfig;
   }
 };
 
 duneana::TriggerActivityMakerOnlineTPC::TriggerActivityMakerOnlineTPC(
-								      fhicl::ParameterSet const &p)
+    fhicl::ParameterSet const &p)
   : EDProducer{p}, algname(p.get<std::string>("algorithm")),
-  algconfig_apa0(p.get<fhicl::ParameterSet>("algconfig_apa0")),
-  algconfig_apa1(p.get<fhicl::ParameterSet>("algconfig_apa1")),
-  algconfig_apa2(p.get<fhicl::ParameterSet>("algconfig_apa2")),
+  algconfig_plane0(p.get<fhicl::ParameterSet>("algconfig_plane0")),
+  algconfig_plane1(p.get<fhicl::ParameterSet>("algconfig_plane1")),
+  algconfig_plane2(p.get<fhicl::ParameterSet>("algconfig_plane2")),
+  algconfig_plane3(p.get<fhicl::ParameterSet>("algconfig_plane3")),
   tp_tag(p.get<art::InputTag>("tp_tag")),
   channel_mask(p.get<std::vector<raw::ChannelID_t>>("channel_mask", std::vector<raw::ChannelID_t>{})),
+  n_modules_(p.get<int>("nmodules")),
+  mergecollwires_(p.get<bool>("mergecollwires", false)),
   verbosity(p.get<int>("verbosity", 1))
-  // ,
-  // More initializers here.
-  {
-    // for compactness of the producer and consumer declarations
-    using dunedaq::trgdataformats::TriggerActivityData;
-    using dunedaq::trgdataformats::TriggerPrimitive;
+{
+  // for compactness of the producer and consumer declarations
+  using dunedaq::trgdataformats::TriggerActivityData;
+  using dunedaq::trgdataformats::TriggerPrimitive;
 
-    produces<std::vector<TriggerActivityData>>();
-    produces<art::Assns<TriggerActivityData, TriggerPrimitive>>();
-    consumes<std::vector<TriggerPrimitive>>(tp_tag);
-  }
+  produces<std::vector<TriggerActivityData>>();
+  produces<art::Assns<TriggerActivityData, TriggerPrimitive>>();
+  consumes<std::vector<TriggerPrimitive>>(tp_tag);
+}
 
 void duneana::TriggerActivityMakerOnlineTPC::beginJob() {
   // nice printout of channel mask
@@ -141,7 +156,7 @@ void duneana::TriggerActivityMakerOnlineTPC::beginJob() {
     for(raw::ChannelID_t c : channel_mask){
       std::cout << " " << c;
       if(!channel_mask.empty() && c != channel_mask.back()){
-	std::cout << ",";
+        std::cout << ",";
       }
     }
     std::cout << std::endl;
@@ -160,7 +175,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
   auto ta_vec_ptr = std::make_unique<std::vector<TriggerActivityData>>();
   auto tp_vec_ptr = std::make_unique<std::vector<TriggerPrimitive>>();
   auto tp_in_tas_assn_ptr =
-    std::make_unique<art::Assns<TriggerActivityData, TriggerPrimitive>>();
+      std::make_unique<art::Assns<TriggerActivityData, TriggerPrimitive>>();
 
   // ptrmaker to make an art::ptr for the assocs
   art::PtrMaker<dunedaq::trgdataformats::TriggerActivityData> taPtrMaker{e};
@@ -172,18 +187,31 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
   // in essence what we want to do here, is group the TPs by ROP and then sort
   // by time, but we need to keep the index in the original TP vector (and can't
   // make an art::ptr now so we lose that if we hand it off to the online algo)
-  std::map<readout::ROPID, std::vector<TriggerPrimitiveIdx>> tp_by_rop;
+  std::map< readout::ROPID, std::vector<TriggerPrimitiveIdx> > tp_by_rop;
   for (size_t i = 0; i < tp_vec.size(); ++i) {
-    readout::ROPID rop = geom->ChannelToROP(tp_vec.at(i).channel);
-    tp_by_rop[rop].push_back(
-			     std::make_pair(i, tp_vec.at(i)));
-  }
 
+    readout::ROPID rop = geom->ChannelToROP(tp_vec.at(i).channel);
+    
+    readout::ROPID final_rop;
+    for (short unsigned int i = 0; i < n_modules_; i ++) {
+      for (short unsigned int j = 0; j < 4; j ++) {
+	
+	readout::ROPID tmp_rop = {0, i, j};
+	if (j < 2 && rop == tmp_rop) final_rop = tmp_rop;
+	else if (j >= 2 && rop == tmp_rop) {
+	  if (mergecollwires_) final_rop = {0, i, 2};
+	  else final_rop = {0, i, j};
+	}
+      }
+    }
+    tp_by_rop[final_rop].push_back(std::make_pair(i, tp_vec.at(i)));
+  }
+  
   // now we process each ROP
   for (auto &tps : tp_by_rop) {
     if(maker_per_plane.count(tps.first) == 0){
       if(verbosity >= Verbosity::kInfo){
-	std::cout << "Creating Maker on Plane " << tps.first << std::endl;
+        std::cout << "Creating Maker on Plane " << tps.first << std::endl;
       }
       maker_per_plane[tps.first] = tf->build_maker(algname);
     }
@@ -203,16 +231,19 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
     nlohmann::json this_algconfig;
     switch(plane){
     case 0:
-      this_algconfig = get_alg_config(algconfig_apa0);
+      this_algconfig = get_alg_config(algconfig_plane0);
       break;
     case 1:
-      this_algconfig = get_alg_config(algconfig_apa1);
+      this_algconfig = get_alg_config(algconfig_plane1);
       break;
     case 2:
-      this_algconfig = get_alg_config(algconfig_apa2);
+      this_algconfig = get_alg_config(algconfig_plane2);
+      break;
+    case 3:
+      this_algconfig = get_alg_config(algconfig_plane3);
       break;
     default:
-      this_algconfig = get_alg_config(algconfig_apa0);
+      this_algconfig = get_alg_config(algconfig_plane0);
       break;
     }
     alg->configure(this_algconfig);
@@ -233,11 +264,11 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
 	std::cout << "Ignoring Masked TP on channel: " << tp.second.channel << std::endl;
       }
     }
-
+    
     if (verbosity >= Verbosity::kInfo && created_tas.size() > 0) {
-        std::cout << "Created " << created_tas.size() << " TAs on ROP " << tps.first << std::endl;
+      std::cout << "Created " << created_tas.size() << " TAs on ROP " << tps.first << std::endl;
     }
-
+    
     // now the fun part
     // to make the associations we have to use the idx we created earlier
     // BUT the input TA only has a list of the base objects in it
@@ -247,18 +278,16 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
       // now we find the TPs which are in the output TA and create the
       // associations
       auto const taPtr = taPtrMaker(ta_vec_ptr->size());
-
+      
       // add output ta to the ta dataproduct vector and create a PtrVector for
       // the TPs in the TA
       ta_vec_ptr->emplace_back(out_ta);
       art::PtrVector<TriggerPrimitive> tp_in_ta_ptrs;
-
+      
       // now loop through each TP in the TA to handle associations
       for (auto &in_tp : out_ta.inputs) {
         // get an iterator to matching TPs with find_if
-        std::vector<TriggerPrimitiveIdx>::iterator tp_it = std::find_if(
-            tps.second.begin(), tps.second.end(),
-            [&](TriggerPrimitiveIdx &t) { return isTPEqual(t.second, in_tp); });
+        std::vector<TriggerPrimitiveIdx>::iterator tp_it = std::find_if(tps.second.begin(), tps.second.end(), [&](TriggerPrimitiveIdx &t) { return isTPEqual(t.second, in_tp); });
 
         // find_if will return tps.second.end() if none are found
         while (tp_it != tps.second.end()) {
@@ -267,10 +296,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
           tp_in_ta_ptrs.push_back(
               art::Ptr<TriggerPrimitive>(tpHandle, tp_it->first));
           // get an iterator to the next (if any) matching TP
-          tp_it = std::find_if(++tp_it, tps.second.end(),
-                               [&](TriggerPrimitiveIdx &t) {
-                                 return isTPEqual(t.second, in_tp);
-                               });
+          tp_it = std::find_if(++tp_it, tps.second.end(), [&](TriggerPrimitiveIdx &t) {return isTPEqual(t.second, in_tp); });
         }
       }
       // add the associations to the tp_in_ta assoc
