@@ -1,0 +1,3 @@
+[submodule "dunetrigger/triggeralgs"]
+	path = dunetrigger/triggeralgs
+	url = https://github.com/DUNE-DAQ/triggeralgs.git
