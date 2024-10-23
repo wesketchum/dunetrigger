@@ -45,8 +45,10 @@ find_ups_product( larsoft )
 find_package(larcore)
 find_ups_product( nutools )
 find_ups_product( art )
+find_ups_product( nlohmann_json )
 find_ups_root()
 find_ups_product( cetbuildtools ) # LIBRARY_OUTPUT_DIRECTORY, etc.
+find_ups_product ( TRACE )
 
 #dune packages
 find_ups_product( dunecore )

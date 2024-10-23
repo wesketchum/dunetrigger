@@ -19,8 +19,8 @@ art_make( BASENAME_ONLY MODULE_LIBRARIES
   messagefacility::MF_MessageLogger
   cetlib::cetlib cetlib_except
   ROOT_BASIC_LIB_LIST
+  triggeralgs_module
 )
-
 
 install_fhicl()
 install_headers()
