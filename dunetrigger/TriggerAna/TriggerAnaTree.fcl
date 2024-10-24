@@ -1,0 +1,13 @@
+# defaults for the TriggerAnaTree module
+
+BEGIN_PROLOG
+
+TriggerAnaTreeDefaults:
+{
+  module_type: "TriggerAnaTree"
+  dump_tp: true
+  dump_ta: true
+  dump_tc: true
+}
+
+END_PROLOG

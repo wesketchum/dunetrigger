@@ -38,7 +38,20 @@
 #include <utility>
 
 namespace duneana {
-class TriggerActivityMakerOnlineTPC;
+  class TriggerActivityMakerOnlineTPC;
+  typedef std::pair<readout::TPCsetID, geo::View_t> TAMakerScopeID_t;
+
+  std::ostream& operator<<(std::ostream& os, const duneana::TAMakerScopeID_t &scope){
+    return (os << scope.first << " P:" << scope.second);
+  }
+
+  static TAMakerScopeID_t getTAScopeID(readout::ROPID &ropid, geo::Geometry &geom) {
+    TAMakerScopeID_t result = {
+      ropid.asConstTPCsetID(), // APA is a TPCSet
+      geom.View(ropid)
+    };
+    return result;
+  }
 }
 
 class duneana::TriggerActivityMakerOnlineTPC : public art::EDProducer {
@@ -69,11 +82,9 @@ private:
 
   std::vector<raw::ChannelID_t> channel_mask;
 
-  int n_modules_;
-  bool mergecollwires_;
-
   int verbosity;
-
+  bool flush;
+  
   // defining this here so it isn't ugly to write every time
   // need it to store the index of the triggerprimitive to later make an
   // art::Assn
@@ -89,11 +100,11 @@ private:
   //std::unique_ptr<triggeralgs::TriggerActivityMaker> alg;
 
 
-  std::map< readout::ROPID, std::shared_ptr<triggeralgs::TriggerActivityMaker> > maker_per_plane;
+  std::map< TAMakerScopeID_t, std::shared_ptr<triggeralgs::TriggerActivityMaker> > maker_per_plane;
   // small function to compare tps by time
   static bool compareTriggerPrimitive(const TriggerPrimitiveIdx &tp1,
                                       const TriggerPrimitiveIdx &tp2) {
-    return (tp1.second.time_start < tp2.second.time_start);
+    return std::tie(tp1.second.time_start, tp1.second.channel) < std::tie(tp2.second.time_start, tp2.second.channel);
   }
 
   // little function to check equality of TPs
@@ -136,9 +147,8 @@ duneana::TriggerActivityMakerOnlineTPC::TriggerActivityMakerOnlineTPC(
   algconfig_plane3(p.get<fhicl::ParameterSet>("algconfig_plane3")),
   tp_tag(p.get<art::InputTag>("tp_tag")),
   channel_mask(p.get<std::vector<raw::ChannelID_t>>("channel_mask", std::vector<raw::ChannelID_t>{})),
-  n_modules_(p.get<int>("nmodules")),
-  mergecollwires_(p.get<bool>("mergecollwires", false)),
-  verbosity(p.get<int>("verbosity", 1))
+  verbosity(p.get<int>("verbosity", 1)),
+  flush(p.get<bool>("flush", false))
 {
   // for compactness of the producer and consumer declarations
   using dunedaq::trgdataformats::TriggerActivityData;
@@ -187,28 +197,15 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
   // in essence what we want to do here, is group the TPs by ROP and then sort
   // by time, but we need to keep the index in the original TP vector (and can't
   // make an art::ptr now so we lose that if we hand it off to the online algo)
-  std::map< readout::ROPID, std::vector<TriggerPrimitiveIdx> > tp_by_rop;
+  std::map<TAMakerScopeID_t, std::vector<TriggerPrimitiveIdx>> tp_by_plane;
   for (size_t i = 0; i < tp_vec.size(); ++i) {
-
     readout::ROPID rop = geom->ChannelToROP(tp_vec.at(i).channel);
-    
-    readout::ROPID final_rop;
-    for (short unsigned int i = 0; i < n_modules_; i ++) {
-      for (short unsigned int j = 0; j < 4; j ++) {
-	
-	readout::ROPID tmp_rop = {0, i, j};
-	if (j < 2 && rop == tmp_rop) final_rop = tmp_rop;
-	else if (j >= 2 && rop == tmp_rop) {
-	  if (mergecollwires_) final_rop = {0, i, 2};
-	  else final_rop = {0, i, j};
-	}
-      }
-    }
-    tp_by_rop[final_rop].push_back(std::make_pair(i, tp_vec.at(i)));
+    TAMakerScopeID_t scope = getTAScopeID(rop, *geom);
+    tp_by_plane[scope].push_back(std::make_pair(i, tp_vec.at(i)));
   }
   
   // now we process each ROP
-  for (auto &tps : tp_by_rop) {
+  for (auto &tps : tp_by_plane) {
     if(maker_per_plane.count(tps.first) == 0){
       if(verbosity >= Verbosity::kInfo){
         std::cout << "Creating Maker on Plane " << tps.first << std::endl;
@@ -225,7 +222,8 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
     }
 
     // get the APA from the ROP we are on
-    auto plane = geom->ROPtoWirePlanes(tps.first).at(0).Plane;
+    unsigned int plane = tps.first.second;
+    //auto plane = geom->ROPtoWirePlanes(tps.first).at(0).Plane;
     // configure the algorithm accordingly
     // we might want to access the algconfig separately later
     nlohmann::json this_algconfig;
@@ -264,7 +262,15 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
 	std::cout << "Ignoring Masked TP on channel: " << tp.second.channel << std::endl;
       }
     }
-    
+    // TPs in window will only be evaluated one an out-of-window TA is seen by the TAMaker.
+    // This would result in the last TA in the event being missing, and TAs being written
+    // to the wrong event. Avoid this by adding a dummy tp with infinite time to force a 
+    // window evaluation.
+    if (flush){
+      TriggerPrimitive dummy_tp;
+      (*alg)(dummy_tp, created_tas);
+    }
+
     if (verbosity >= Verbosity::kInfo && created_tas.size() > 0) {
       std::cout << "Created " << created_tas.size() << " TAs on ROP " << tps.first << std::endl;
     }

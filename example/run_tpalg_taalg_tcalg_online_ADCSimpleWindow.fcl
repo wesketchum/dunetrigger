@@ -62,8 +62,6 @@ physics:
          algconfig_plane1: @local::algconfig_ta
          algconfig_plane2: @local::algconfig_ta
          algconfig_plane3: @local::algconfig_ta
-         nmodules: 4
-         mergecollwires: true
          verbosity: 1
      }
 
