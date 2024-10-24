@@ -19,6 +19,61 @@ The bash snippet below creates and sets up the development environment for the L
 It is worth noting that the username must be adapted to the user running the script. Regarding the software version, it is set to `v09_91_04d00`, but it can be changed to any other future version available in the DUNE software environment. The same applies to the qualifiers, which are set to `e26:prof` in this case.
 
 ```bash
+For developers only!
+
+# for setting up the development environment
+/cvmfs/oasis.opensciencegrid.org/mis/apptainer/current/bin/apptainer shell --shell=/bin/bash -B /cvmfs,/exp,/nashome,/pnfs/dune,/opt,/run/user,/etc/hostname,/etc/hosts,/etc/krb5.conf --ipc --pid /cvmfs/singularity.opensciencegrid.org/fermilab/fnal-dev-sl7:latest
+
+VERSION=v09_91_04d00  # Main version of the software to be used
+QUALS=e26:prof  # Qualifiers for the software packages
+DIRECTORY=trigger_sim_dev_online  # Name of the directory where the software will be installed
+export WORKDIR=/exp/dune/app/users/$USER/  # Path to the working directory
+
+source /cvmfs/dune.opensciencegrid.org/products/dune/setup_dune.sh
+export UPS_OVERRIDE="-H Linux64bit+3.10-2.17"
+setup dunesw -v ${VERSION} -q ${QUALS}
+
+cd ${WORKDIR}
+mkdir -p ${DIRECTORY}
+cd ${DIRECTORY}
+
+# Create a new development area using mrb
+mrb newDev -v ${VERSION} -q ${QUALS}
+source ${WORKDIR}/${DIRECTORY}/localProducts*/setup
+
+mrb g https://github.com/wesketchum/dunetrigger.git
+cd srcs/dunetrigger
+git checkout schhibra/daq_triggeralgs
+git submodule init
+git submodule update
+bash create_cmakelists.sh
+bash replace_triggeralgs.sh
+cd ../..
+
+mrb g https://github.com/wesketchum/duneprototypes.git
+git checkout feature/wketchum_FixRawDigitRDTimestamps
+
+cd ${MRB_BUILDDIR}
+
+mrbslp
+mrbsetenv
+mrb i -j4
+
+# for running the trigger TX makers, satrting from decoded raw data file
+workdir=$PWD
+nevts=10
+
+decoded_file=name_decode.root
+
+lar -c srcs/dunetrigger/example/run_tpalg_taalg_tcalg_online_ADCSimpleWindow.fcl -n $nevts -s $decoded_file -o test_trigger_emulation.root
+
+lar -c srcs/dunetrigger/example/run_tpalg_taalg_tcalg_online_ChannelAdjacency.fcl -n $nevts -s $decoded_file -o test_trigger_emulation.root
+
+lar -c srcs/dunetrigger/dunetrigger/TriggerAna/run_triggerTPCInfoComparator.fcl -n $nevts -s $workdir/test_trigger_emulation.root -o test_trigger_comparison.root -T test_trigger_comparison_hist.root
+
+```
+
+```bash
 # This script sets up the development environment for the LArSoft trigger emulation software used in the DUNE experiment.
 # It creates a working directory, sets up the required software packages, and clones the necessary repositories.
 # Finally, it builds and installs the software.
