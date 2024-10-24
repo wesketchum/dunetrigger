@@ -22,7 +22,6 @@ It is worth noting that the username must be adapted to the user running the scr
 For developers only!
 
 # for setting up the development environment
-/cvmfs/oasis.opensciencegrid.org/mis/apptainer/current/bin/apptainer shell --shell=/bin/bash -B /cvmfs,/exp,/nashome,/pnfs/dune,/opt,/run/user,/etc/hostname,/etc/hosts,/etc/krb5.conf --ipc --pid /cvmfs/singularity.opensciencegrid.org/fermilab/fnal-dev-sl7:latest
 
 VERSION=v09_91_04d00  # Main version of the software to be used
 QUALS=e26:prof  # Qualifiers for the software packages
@@ -48,7 +47,7 @@ git submodule init
 git submodule update
 bash create_cmakelists.sh
 bash replace_triggeralgs.sh
-cd ../..
+cd ${WORKDIR}/${DIRECTORY}
 
 mrb g https://github.com/wesketchum/duneprototypes.git
 git checkout feature/wketchum_FixRawDigitRDTimestamps
@@ -59,10 +58,12 @@ mrbslp
 mrbsetenv
 mrb i -j4
 
-# for running the trigger TX makers, satrting from decoded raw data file
+# for running the TX makers, starting from decoded raw data file
+
+cd ${WORKDIR}/${DIRECTORY}
+
 workdir=$PWD
 nevts=10
-
 decoded_file=name_decode.root
 
 lar -c srcs/dunetrigger/example/run_tpalg_taalg_tcalg_online_ADCSimpleWindow.fcl -n $nevts -s $decoded_file -o test_trigger_emulation.root
