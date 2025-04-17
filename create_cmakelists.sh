@@ -1,31 +1,41 @@
-#!/bin/bash
+cat << EOF > test.txt
+add_compile_options(-O2 -flto -Wno-error=sign-compare -Wno-error=unused-variable)
 
-# Creating file
-touch CMakeLists_tmp.txt
+include(BasicPlugin)
 
-# if the file was created
-if [ -f "CMakeLists_tmp.txt" ]; then
-    
-    # Add the content to the CMakeLists_tmp.txt file
-    echo 'add_compile_options(-O2 -flto -Wno-error=sign-compare -Wno-error=unused-variable)' > CMakeLists_tmp.txt
-    echo '' >> CMakeLists_tmp.txt
-    echo 'include(BasicPlugin)' >> CMakeLists_tmp.txt
-    echo '' >> CMakeLists_tmp.txt
-    echo 'basic_plugin(triggeralgs module' >> CMakeLists_tmp.txt
-    echo '             BASENAME_ONLY' >> CMakeLists_tmp.txt
-    echo '             LIBRARIES' >> CMakeLists_tmp.txt
-    echo '             OfflineTPCChannelMap_module' >> CMakeLists_tmp.txt
-    echo '             SOURCE' >> CMakeLists_tmp.txt
-    for file in dunetrigger/triggeralgs/src/*.cpp; do
-        echo "             ${file#dunetrigger/triggeralgs/}" >> CMakeLists_tmp.txt
-    done
-    for file in dunetrigger/triggeralgs/src/*/*.cpp; do
-	echo "             ${file#dunetrigger/triggeralgs/}" >> CMakeLists_tmp.txt
-    done
-    echo ')' >> CMakeLists_tmp.txt
-    echo '' >> CMakeLists_tmp.txt
-    echo '# TODO PAR 2021-04-15: What is in autogen? Is it actually used?' >> CMakeLists_tmp.txt
-    echo 'add_subdirectory(autogen)' >> CMakeLists_tmp.txt
+basic_plugin(triggeralgs module
+             BASENAME_ONLY
+             LIBRARIES
+             OfflineTPCChannelMap_module
+             SOURCE
+             src/TAWindow.cpp
+             src/TPWindow.cpp
+             src/TriggerActivityMakerADCSimpleWindow.cpp
+             src/TriggerActivityMakerBundleN.cpp
+             src/TriggerActivityMakerChannelAdjacency.cpp
+             src/TriggerActivityMakerChannelDistance.cpp
+             src/TriggerActivityMakerDBSCAN.cpp
+             src/TriggerActivityMakerHorizontalMuon.cpp
+             src/TriggerActivityMakerMichelElectron.cpp
+             src/TriggerActivityMakerPlaneCoincidence.cpp
+             src/TriggerActivityMakerPrescale.cpp
+             src/TriggerActivityMakerSupernova.cpp
+             src/TriggerCandidateMakerADCSimpleWindow.cpp
+             src/TriggerCandidateMakerBundleN.cpp
+             src/TriggerCandidateMakerChannelAdjacency.cpp
+             src/TriggerCandidateMakerChannelDistance.cpp
+             src/TriggerCandidateMakerDBSCAN.cpp
+             src/TriggerCandidateMakerHorizontalMuon.cpp
+             src/TriggerCandidateMakerMichelElectron.cpp
+             src/TriggerCandidateMakerPlaneCoincidence.cpp
+             src/TriggerCandidateMakerPrescale.cpp
+             src/TriggerCandidateMakerSupernova.cpp
+             src/TriggerDecisionMakerSupernova.cpp
+             src/dbscan/dbscan.cpp
+             src/dbscan/Hit.cpp
+)
 
-    mv CMakeLists_tmp.txt dunetrigger/triggeralgs/CMakeLists.txt
-fi
+# TODO PAR 2021-04-15: What is in autogen? Is it actually used?
+add_subdirectory(autogen)
+EOF
+

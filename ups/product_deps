@@ -32,7 +32,7 @@ flcdir  product_dir     fcl
 # Add the dependent product and version
 
 product          version
-dunecore         v09_91_04d00
+dunecore         v10_00_04d00
 cetbuildtools    v8_20_00  -  only_for_build
 end_product_list
 

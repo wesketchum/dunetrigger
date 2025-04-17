@@ -27,7 +27,7 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/RDTimeStamp.h"
 
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -206,7 +206,7 @@ void duneana::TriggerTPCInfoDisplay::analyze(art::Event const& e)
   fTriggerCandidate = *tc_handle;
 
   // Load the geometry service
-  art::ServiceHandle<geo::Geometry> geom;
+  geo::WireReadoutGeom const* geom = &art::ServiceHandle<geo::WireReadout>()->Get();
 
   if(verbosity_ >= Verbosity::kInfo)
   {

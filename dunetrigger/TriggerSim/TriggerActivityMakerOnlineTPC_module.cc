@@ -16,7 +16,7 @@
 #include "canvas/Persistency/Common/PtrVector.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcoreobj/SimpleTypesAndConstants/readout_types.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -45,9 +45,9 @@ namespace duneana {
     return (os << scope.first << " P:" << scope.second);
   }
 
-  static TAMakerScopeID_t getTAScopeID(readout::ROPID &ropid, geo::Geometry &geom) {
+  static TAMakerScopeID_t getTAScopeID(readout::ROPID &ropid, geo::WireReadoutGeom const &geom) {
     TAMakerScopeID_t result = {
-      ropid.asConstTPCsetID(), // APA is a TPCSet
+      ropid.asTPCsetID(), // APA is a TPCSet
       geom.View(ropid)
     };
     return result;
@@ -144,7 +144,7 @@ duneana::TriggerActivityMakerOnlineTPC::TriggerActivityMakerOnlineTPC(
   algconfig_plane0(p.get<fhicl::ParameterSet>("algconfig_plane0")),
   algconfig_plane1(p.get<fhicl::ParameterSet>("algconfig_plane1")),
   algconfig_plane2(p.get<fhicl::ParameterSet>("algconfig_plane2")),
-  algconfig_plane3(p.get<fhicl::ParameterSet>("algconfig_plane3")),
+  algconfig_plane3(p.get<fhicl::ParameterSet>("algconfig_plane3", {})),
   tp_tag(p.get<art::InputTag>("tp_tag")),
   channel_mask(p.get<std::vector<raw::ChannelID_t>>("channel_mask", std::vector<raw::ChannelID_t>{})),
   verbosity(p.get<int>("verbosity", 1)),
@@ -179,7 +179,7 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
   using dunedaq::trgdataformats::TriggerPrimitive;
 
   // get a service handle for geometry
-  art::ServiceHandle<geo::Geometry> geom;
+  geo::WireReadoutGeom const* geom = &art::ServiceHandle<geo::WireReadout>()->Get();
 
   // unique ptrs to vectors for associations
   auto ta_vec_ptr = std::make_unique<std::vector<TriggerActivityData>>();
@@ -206,12 +206,10 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
   
   // now we process each ROP
   for (auto &tps : tp_by_plane) {
-    if(maker_per_plane.count(tps.first) == 0){
-      if(verbosity >= Verbosity::kInfo){
-        std::cout << "Creating Maker on Plane " << tps.first << std::endl;
-      }
-      maker_per_plane[tps.first] = tf->build_maker(algname);
+    if(verbosity >= Verbosity::kInfo){
+      std::cout << "Creating Maker on Plane " << tps.first << std::endl;
     }
+    maker_per_plane[tps.first] = tf->build_maker(algname);
     // make the algorithm here so that we reset the internal state for each ROP
     // - since I believe those are independent for the TAMaker 
     std::shared_ptr<triggeralgs::TriggerActivityMaker> alg = maker_per_plane[tps.first];
@@ -294,8 +292,8 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
       for (auto &in_tp : out_ta.inputs) {
         // get an iterator to matching TPs with find_if
         std::vector<TriggerPrimitiveIdx>::iterator tp_it = std::find_if(tps.second.begin(), tps.second.end(), [&](TriggerPrimitiveIdx &t) { return isTPEqual(t.second, in_tp); });
-
-        // find_if will return tps.second.end() if none are found
+        if (tp_it == tps.second.end())
+          std::cout << "WARNING: TP recorded in TA is not found in the list of TPs!!!" << std::endl;
         while (tp_it != tps.second.end()) {
           // push back an art::Ptr pointing to the proper index in the vector
           // of input TPs
@@ -303,6 +301,8 @@ void duneana::TriggerActivityMakerOnlineTPC::produce(art::Event &e) {
               art::Ptr<TriggerPrimitive>(tpHandle, tp_it->first));
           // get an iterator to the next (if any) matching TP
           tp_it = std::find_if(++tp_it, tps.second.end(), [&](TriggerPrimitiveIdx &t) {return isTPEqual(t.second, in_tp); });
+          if (tp_it != tps.second.end())
+            std::cout << "WARNING: More than one match found for TP recorded in TA. Likely there's a duplicate in the TP list, or IsTPEqual is inadequate." << std::endl;
         }
       }
       // add the associations to the tp_in_ta assoc

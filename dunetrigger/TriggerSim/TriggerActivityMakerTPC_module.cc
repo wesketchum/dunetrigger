@@ -14,7 +14,7 @@
 #include "detdataformats/trigger/TriggerPrimitive.hpp"
 #include "detdataformats/DetID.hpp"
 
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 
 #include "art/Persistency/Common/PtrMaker.h"
 #include "art/Framework/Core/EDProducer.h"
@@ -96,7 +96,7 @@ void duneana::TriggerActivityMakerTPC::produce(art::Event& e)
 {
   
   //grab the geometry service
-  art::ServiceHandle<geo::Geometry> geom;
+  geo::WireReadoutGeom const* geom = &art::ServiceHandle<geo::WireReadout>()->Get();
   
   //make output collections for the TriggerActivityData objects,
   //the TriggerPrimitives contained in them, and

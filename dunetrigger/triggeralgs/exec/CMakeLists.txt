@@ -1,0 +1,8 @@
+add_executable(compile_me compile_me.cxx)
+add_executable(run_trivial_candidate run_trivial_candidate.cxx)
+
+target_include_directories(run_trivial_candidate PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(run_trivial_candidate DuneTriggers)
+target_link_libraries(run_trivial_candidate ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(compile_me DuneTriggers SupernovaTrigger)

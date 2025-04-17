@@ -8,6 +8,12 @@ TriggerAnaTreeDefaults:
   dump_tp: true
   dump_ta: true
   dump_tc: true
+
+  # If true, dump all information about mctruth particles in a tree named "mctruths"
+  dump_mctruths: true 
+  # If true, dump all simChannels and their IDEs in a tree named "simides" 
+  dump_simides: true
+  simchannel_tag: "tpcrawdecoder:simpleSC"
 }
 
 END_PROLOG

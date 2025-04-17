@@ -38,8 +38,6 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/RDTimeStamp.h"
 
-#include "larcore/Geometry/Geometry.h"
-
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
@@ -173,9 +171,6 @@ void duneana::TriggerTPCInfoComparator::analyze(art::Event const& e)
   // Take DAQ TCs from event
   auto daq_tc_handle = e.getValidHandle< std::vector<dunedaq::trgdataformats::TriggerCandidateData> >(daq_tag);
   fTriggerCandidateDAQ = *daq_tc_handle;
-
-  // Load the geometry service
-  art::ServiceHandle<geo::Geometry> geom;
 
   if(verbosity_ >= Verbosity::kInfo)
   {

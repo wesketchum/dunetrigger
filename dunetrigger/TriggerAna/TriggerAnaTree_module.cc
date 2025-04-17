@@ -26,6 +26,9 @@
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TTree.h>
+#include "nusimdata/SimulationBase/MCParticle.h"
+#include "nusimdata/SimulationBase/MCTruth.h"
+#include "lardataobj/Simulation/SimChannel.h"
 
 using dunedaq::trgdataformats::TriggerActivityData;
 using dunedaq::trgdataformats::TriggerCandidateData;
@@ -62,26 +65,122 @@ private:
   std::map<std::string, dunedaq::trgdataformats::TriggerActivityData> ta_bufs;
   std::map<std::string, dunedaq::trgdataformats::TriggerCandidateData> tc_bufs;
 
-
   bool dump_tp, dump_ta, dump_tc;
 
   void make_tp_tree_if_needed(std::string tag, bool assn=false);
   void make_ta_tree_if_needed(std::string tag, bool assn=false);
   void make_tc_tree_if_needed(std::string tag);
+  
+  bool dump_mctruths;
+  TTree* mctruth_tree;
+  int mctruth_pdg;
+  std::string mctruth_process;
+  int mctruth_status;
+  std::string mctruth_gen_name;
+  double mctruth_x, mctruth_y, mctruth_z;
+  double mctruth_Px, mctruth_Py, mctruth_Pz;
+  double mctruth_en;
+
+  bool dump_simides;
+  std::string simchannel_tag;
+  TTree* simide_tree;
+  unsigned int sim_channel_id;
+  unsigned short tdc;
+  float ide_numElectrons, ide_energy, ide_x, ide_y, ide_z;
 };
 
 TriggerAnaTree::TriggerAnaTree(fhicl::ParameterSet const &p)
     : EDAnalyzer{p}, dump_tp(p.get<bool>("dump_tp")),
-      dump_ta(p.get<bool>("dump_ta")), dump_tc(p.get<bool>("dump_tc"))
+      dump_ta(p.get<bool>("dump_ta")), 
+      dump_tc(p.get<bool>("dump_tc")),
+      dump_mctruths(p.get<bool>("dump_mctruths", true)),
+      dump_simides(p.get<bool>("dump_simides", true)),
+      simchannel_tag(p.get<std::string>("simchannel_tag", "tpcrawdecoder:simpleSC"))
 // More initializers here.
 {}
 
-void TriggerAnaTree::beginJob() {}
+void TriggerAnaTree::beginJob() {
+  if (dump_mctruths) {
+    mctruth_tree = tfs->make<TTree>("mctruths", "mctruths");
+    mctruth_tree->Branch("Event", &fEventID, "Event/I");
+    mctruth_tree->Branch("Run", &fRun, "Run/I");
+    mctruth_tree->Branch("SubRun", &fSubRun, "SubRun/I");
+    mctruth_tree->Branch("pdg", &mctruth_pdg);
+    mctruth_tree->Branch("generator_name", &mctruth_gen_name);
+    mctruth_tree->Branch("status_code", &mctruth_status);
+    mctruth_tree->Branch("x", &mctruth_x);
+    mctruth_tree->Branch("y", &mctruth_y);
+    mctruth_tree->Branch("z", &mctruth_z);
+    mctruth_tree->Branch("Px", &mctruth_Px);
+    mctruth_tree->Branch("Py", &mctruth_Py);
+    mctruth_tree->Branch("Pz", &mctruth_Pz);
+    mctruth_tree->Branch("en", &mctruth_en);
+    mctruth_tree->Branch("process", &mctruth_process);
+  }
+  if (dump_simides) {
+    simide_tree = tfs->make<TTree>("simides", "simides");
+    simide_tree->Branch("Event", &fEventID, "Event/I");
+    simide_tree->Branch("Run", &fRun, "Run/I");
+    simide_tree->Branch("SubRun", &fSubRun, "SubRun/I");
+    simide_tree->Branch("ChannelID", &sim_channel_id, "ChannelID/i");
+    simide_tree->Branch("Timestamp", &tdc, "Timestamp/s");
+    simide_tree->Branch("numElectrons", &ide_numElectrons, "ide_numElectrons");
+    simide_tree->Branch("Energy", &ide_energy, "ide_energy");
+    simide_tree->Branch("x", &ide_x, "ide_x");
+    simide_tree->Branch("y", &ide_y, "ide_y");
+    simide_tree->Branch("z", &ide_z, "ide_z");
+  }
+}
 
 void TriggerAnaTree::analyze(art::Event const &e) {
   fRun = e.run();
   fSubRun = e.subRun();
   fEventID = e.id().event();
+  if (dump_mctruths) {
+    std::vector<art::Handle<std::vector<simb::MCTruth>>> mctruthHandles =
+        e.getMany<std::vector<simb::MCTruth>>();
+    for (auto const &mctruthHandle : mctruthHandles) {
+      std::string generator_name =
+          mctruthHandle.provenance()->inputTag().label();
+      for (const simb::MCTruth &truthblock : *mctruthHandle) {
+        int nparticles = truthblock.NParticles();
+        for (int ipart = 0; ipart < nparticles; ipart++) {
+          const simb::MCParticle &part = truthblock.GetParticle(ipart);
+          mctruth_pdg = part.PdgCode();
+          mctruth_gen_name = generator_name;
+          mctruth_status = part.StatusCode();
+          mctruth_process = part.Process();
+
+          mctruth_x = part.Vx();
+          mctruth_y = part.Vy();
+          mctruth_z = part.Vz();
+          mctruth_Px = part.Px();
+          mctruth_Py = part.Py();
+          mctruth_Pz = part.Pz();
+          mctruth_en = part.E();
+          mctruth_tree->Fill();
+        }
+      }
+    }
+  }
+  if (dump_simides) {
+    auto simchannels = e.getValidHandle<std::vector<sim::SimChannel>>(simchannel_tag);
+    for (const sim::SimChannel &sc : *simchannels) {
+      sim_channel_id = sc.Channel();
+      sim::SimChannel::TDCIDEs_t const &tdcidemap = sc.TDCIDEMap();
+      for (const sim::TDCIDE &tdcide : tdcidemap) {
+        tdc = tdcide.first;
+        for (sim::IDE ide : tdcide.second) {
+          ide_numElectrons = ide.numElectrons;
+          ide_energy = ide.energy;
+          ide_x = ide.x;
+          ide_y = ide.y;
+          ide_z = ide.z;
+          simide_tree->Fill();
+        }
+      }
+    }
+  }
   if (dump_tp) {
     std::vector<art::Handle<std::vector<TriggerPrimitive>>> tpHandles =
         e.getMany<std::vector<TriggerPrimitive>>();

@@ -20,7 +20,6 @@
 #include "canvas/Persistency/Common/types.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
-#include "larcore/Geometry/Geometry.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "dunetrigger/triggeralgs/include/triggeralgs/TriggerCandidate.hpp"
@@ -154,8 +153,6 @@ void duneana::TriggerCandidateMakerOnlineTPC::beginJob() {
 void duneana::TriggerCandidateMakerOnlineTPC::produce(art::Event &e) {
   using dunedaq::trgdataformats::TriggerActivityData;
   using dunedaq::trgdataformats::TriggerCandidateData;
-  // get a handle on the art geometry service
-  art::ServiceHandle<geo::Geometry> geo;
 
   // get a handle on the TAs and dereference it
   auto ta_handle = e.getValidHandle<std::vector<TriggerActivityData>>(ta_tag);

@@ -1,0 +1,12 @@
+#include "@INC_ALGO@"
+#include <iostream>
+#include <string>
+
+int main() {
+  std::cout << "@ALGONAME@\n";
+  triggeralgs::@ALGONAME@ a;
+  (void) a;
+  return 0;
+}
+
+

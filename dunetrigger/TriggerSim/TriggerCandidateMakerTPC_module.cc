@@ -14,8 +14,6 @@
 #include "detdataformats/trigger/TriggerCandidateData.hpp"
 #include "detdataformats/DetID.hpp"
 
-#include "larcore/Geometry/Geometry.h"
-
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
@@ -86,10 +84,6 @@ bool duneana::TriggerCandidateMakerTPC::compareTriggerActivity(dunedaq::trgdataf
 
 void duneana::TriggerCandidateMakerTPC::produce(art::Event& e)
 {
-  
-  //grab the geometry service
-  art::ServiceHandle<geo::Geometry> geom;
-  
   //make output collection for the TriggerCandidateData objects
   auto tc_vec_ptr = std::make_unique< std::vector<dunedaq::trgdataformats::TriggerCandidateData> >();
 
